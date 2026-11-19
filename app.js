@@ -223,18 +223,23 @@ function simulate(init,monthly,years,rate){
 }
 function renderSim(){
   var init=num($("simInit").value), monthly=num($("simMonth").value), years=Math.min(40,Math.max(1,Math.round(num($("simYears").value))||0));
+  var pct=Math.min(30,num($("simRate").value));
   var out=$("simOut"); out.textContent="";
-  if(!years){out.appendChild(el("p","empty","Indique une durée en années."));return}
-  [["Prudent · 3 % par an",0.03],["Dynamique · 7 % par an",0.07]].forEach(function(s){
-    var r=simulate(init,monthly,years,s[1]);
-    var st=el("div","stat"+(s[1]===0.07?" good":""));
-    st.appendChild(el("div","k",s[0]+" · "+years+(years>1?" ans":" an")));
-    st.appendChild(el("div","v num",eur(r.net!==null?r.net:r.brut)));
-    st.appendChild(el("div","n num",(r.net!==null?"Net après prélèvements sociaux · ":"Brut · ")+"versé "+eur(r.verse)+" · gains "+eur(r.net!==null?r.net-r.verse:r.gains)));
-    out.appendChild(st);
-  });
+  document.querySelectorAll("#simPresets .chip").forEach(function(b){b.setAttribute("aria-pressed",+b.dataset.r===pct?"true":"false")});
+  var r=simulate(init,monthly,years,pct/100);
+  var st=el("div","stat good");
+  st.appendChild(el("div","k",fmt.format(pct)+" % par an · "+years+(years>1?" ans":" an")));
+  st.appendChild(el("div","v num",eur(r.net!==null?r.net:r.brut)));
+  st.appendChild(el("div","n num",(r.net!==null?"Net après prélèvements sociaux · ":"Brut · ")+"versé "+eur(r.verse)+" · gains "+eur(r.net!==null?r.net-r.verse:r.gains)));
+  out.appendChild(st);
 }
 ["simInit","simMonth","simYears"].forEach(function(id){$(id).addEventListener("input",renderSim)});
+$("simRate").addEventListener("input",function(){state.simRate=Math.min(30,num(this.value));save();renderSim()});
+[3,5,7,10].forEach(function(p){
+  var b=el("button","chip",p+" %"); b.type="button"; b.dataset.r=p; b.setAttribute("aria-pressed","false");
+  b.addEventListener("click",function(){$("simRate").value=fmt.format(p);state.simRate=p;save();renderSim()});
+  $("simPresets").appendChild(b);
+});
 
 /* ===== réglages ===== */
 function renderSettings(){
@@ -556,7 +561,7 @@ document.addEventListener("visibilitychange",function(){
   if(!document.hidden){setMonth();$("spDate").max=todayISO();refresh()}
 });
 $("simInit").value=state.pea?fmt.format(state.pea):"0";
-$("simMonth").value=fmt.format(Math.max(0,state.h2-state.h1)); $("simYears").value="10";
+$("simMonth").value=fmt.format(Math.max(0,state.h2-state.h1)); $("simYears").value="10"; $("simRate").value=fmt.format(state.simRate);
 renderAll();
 show(location.hash.slice(1));
 setTimeout(function(){var s=$("splash");if(s)s.remove()},2300);

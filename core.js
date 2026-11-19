@@ -79,6 +79,7 @@ function sanitize(s){
     theme:s.theme==="dark"||s.theme==="light"?s.theme:"auto",
     accent:ACCENTS.indexOf(s.accent)>-1?s.accent:"green",
     rate:rate, mig:!!s.mig,
+    simRate:s.simRate===undefined?7:Math.min(30,num(s.simRate)),
     cats:cats, vcats:vcats,
     livret:num(s.livret),
     pea:num(s.pea),

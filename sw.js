@@ -1,4 +1,4 @@
-const CACHE = "budget3c-v6";
+const CACHE = "budget3c-v7";
 const FILES = ["./", "index.html", "styles.css", "core.js", "charts.js", "views.js", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
