@@ -75,6 +75,7 @@ function renderBourse(){
   });
   renderPfMonth(); renderPositions(h); renderPfDonut(h); renderPfChart(); renderTax(h); renderTxList();
   $("bxPeaOpen").value=state.pf.peaOpen;
+  renderAutoStatus();
 }
 function investedIn(m,c){
   return state.pf.tx.reduce(function(s,t){return t.k==="achat"&&t.c===c&&t.d.slice(0,7)===m?s+t.q*t.p+t.f:s},0);
@@ -109,7 +110,8 @@ function renderPositions(h){
     var s=el("span","s num",fmtQ.format(x.q)+" × "+eur(x.px)+" · revient "+eur(x.pru));
     b.appendChild(s);
     b.appendChild(gainEl("span","g num",x.gain,x.cost));
-    if(!l.pxd||l.pxd<old){var o=el("span","s old",l.pxd?"Cours du "+shortDate(l.pxd)+" · à mettre à jour":"Cours à mettre à jour");o.style.gridColumn="1/3";b.appendChild(o)}
+    if(l.pxe) b.appendChild(el("span","err2","Cours automatique : "+l.pxe));
+    else if(!l.pxd||l.pxd<old){var o=el("span","s old",l.pxd?"Cours du "+shortDate(l.pxd)+" · à mettre à jour":"Cours à mettre à jour");o.style.gridColumn="1/3";b.appendChild(o)}
     b.addEventListener("click",function(){openLineSheet(l)});
     box.appendChild(b);
   });
@@ -198,8 +200,11 @@ function openTxSheet(kind,lineId){
     body.appendChild(segPick([["achat","Achat"],["vente","Vente"],["div","Dividende"]],k,function(v){k=v;fillLines();sync()}));
     var sel=el("select"); sel.setAttribute("aria-label","Action");
     var selF=field("Action",sel); body.appendChild(selF);
-    var nb=el("div",""), name=textInput("","Ex. : Nvidia","Nom de l'action"), tk=textInput("","Ex. : NVDA","Code de l'action (facultatif)",12);
-    nb.appendChild(field("Nom",name)); nb.appendChild(field("Code (facultatif)",tk));
+    var nb=el("div",""), name=textInput("","Ex. : Nvidia","Nom de l'action"), tk=textInput("","Ex. : NVDA","Code de l'action (facultatif)",16), mic="";
+    nb.appendChild(el("label","label field-l","Chercher l'action"));
+    nb.appendChild(codePicker(function(r){if(!txt(name.value,40))name.value=r.instrument_name;tk.value=r.symbol;mic=r.mic_code||""}));
+    nb.appendChild(field("Nom",name)); nb.appendChild(field("Code (pour les cours automatiques)",tk));
+    tk.addEventListener("input",function(){mic=""});
     nb.appendChild(el("label","label field-l","Compte"));
     nb.appendChild(segPick([["cto","Compte-titres"],["pea","PEA"]],acct,function(v){acct=v;sync()}));
     var peaHint=el("p","hint","Seules les actions européennes (et certains ETF) vont sur un PEA. Nvidia, Apple, Tesla… vont sur le compte-titres.");
@@ -258,7 +263,7 @@ function openTxSheet(kind,lineId){
       var msg=k==="achat"?"Achat enregistré":k==="vente"?"Vente enregistrée":"Dividende enregistré";
       if(need>0) msg+=" · versement de "+eur(need)+" ajouté";
       withUndo(msg,function(){
-        if(isNew){line={id:uid(),n:txt(name.value,40),tk:txt(tk.value,12).toUpperCase(),c:acct,px:t.p,pxd:t.d};state.pf.lines.push(line)}
+        if(isNew){line={id:uid(),n:txt(name.value,40),tk:txt(tk.value,16).toUpperCase(),mic:mic,c:acct,px:t.p,pxd:t.d,pxe:""};state.pf.lines.push(line)}
         t.l=line.id;
         // Pas assez d'espèces : on considère que l'argent manquant a été versé sur le compte ce mois-là.
         if(need>0){var o={id:uid(),k:"versement",m:t.d.slice(0,7),c:t.c,a:need};state.ops.push(o);applyOp(o,1)}
@@ -300,10 +305,13 @@ function openLineSheet(l){
       var d=el("div","pl");d.appendChild(el("span","",r[0]));d.appendChild(el("span","num",r[1]));lst.appendChild(d);
     });
     body.appendChild(lst);
-    var name=textInput(l.n,"Nom","Nom de l'action"), tk=textInput(l.tk,"Ex. : NVDA","Code de l'action",12);
+    var name=textInput(l.n,"Nom","Nom de l'action"), tk=textInput(l.tk,"Ex. : NVDA","Code de l'action",16), mic=l.mic||"";
+    tk.addEventListener("input",function(){mic=""});
     var px=amountInput(x.px,"Cours actuel en euros");
     body.appendChild(field("Cours actuel (€)"+(l.pxd?" · noté le "+shortDate(l.pxd):""),px));
     var g=el("div","grid2"); g.appendChild(field("Nom",name)); g.appendChild(field("Code",tk)); body.appendChild(g);
+    body.appendChild(el("label","label field-l","Changer le code (cours automatiques)"));
+    body.appendChild(codePicker(function(r){tk.value=r.symbol;mic=r.mic_code||""}));
     var err=el("p","err"); err.setAttribute("role","alert"); body.appendChild(err);
     var save1=el("button","sav-btn","Enregistrer"); save1.type="button"; body.appendChild(save1);
     var btns=el("div","btns"), buy=el("button","sav-btn ghost","Acheter"), sell=el("button","sav-btn ghost","Vendre");
@@ -316,7 +324,8 @@ function openLineSheet(l){
       closeSheet();
       withUndo("Action mise à jour",function(){
         var z=pfLine(l.id); if(!z) return;
-        z.n=n; z.tk=txt(tk.value,12).toUpperCase();
+        var nt=txt(tk.value,16).toUpperCase(); if(nt!==z.tk||mic!==z.mic)z.pxe="";
+        z.n=n; z.tk=nt; z.mic=mic;
         if(r2(p)!==r2(x.px)||!z.pxd){z.px=p;z.pxd=todayISO()}
         recordSnap();
       });
@@ -362,6 +371,136 @@ function openPxSheet(){
 }
 
 $("bxAdd").addEventListener("click",function(){openTxSheet("achat",null)});
-$("bxPx").addEventListener("click",openPxSheet);
+$("bxPx").addEventListener("click",function(){
+  if(!apiKey()){openPxSheet();return}
+  var b=this; b.disabled=true; b.textContent="Mise à jour…";
+  fetchQuotes(true).then(function(r){b.disabled=false;b.textContent="Mettre à jour les cours";if(r)showToast(quoteSummary(r),null)});
+});
+$("bxManual").addEventListener("click",openPxSheet);
 $("bxTxMore").addEventListener("click",function(){ui.showAllTx=!ui.showAllTx;renderTxList()});
 $("bxPeaOpen").addEventListener("change",function(){state.pf.peaOpen=RE_M.test(this.value)?this.value:"";save();renderBourse()});
+
+/* ===== cours automatiques (Twelve Data + taux de change BCE via Frankfurter) ===== */
+var KEY_API="budget-cours-cle", AUTO_EVERY=30*60*1000, quoteBusy=false;
+function apiKey(){try{return localStorage.getItem(KEY_API)||""}catch(e){return ""}}
+function setApiKey(k){try{if(k)localStorage.setItem(KEY_API,k);else localStorage.removeItem(KEY_API)}catch(e){}}
+function getJSON(u){return fetch(u).then(function(r){return r.json()})}
+function ago(ms){
+  var m=Math.round((Date.now()-ms)/60000);
+  if(m<1)return "à l'instant"; if(m<60)return "il y a "+m+" min";
+  var h=Math.round(m/60); if(h<24)return "il y a "+h+" h";
+  return "le "+new Date(ms).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+}
+function shortErr(msg){
+  msg=String(msg||"");
+  if(/plan|upgrade|grow|pro\b/i.test(msg)) return "pas inclus dans la formule gratuite, saisis-le à la main";
+  if(/symbol|not found|figi|invalid/i.test(msg)) return "code introuvable, cherche l'action dans sa fiche";
+  if(/apikey|api key/i.test(msg)) return "clé API refusée";
+  if(/credits|limit/i.test(msg)) return "limite de requêtes atteinte, réessaie plus tard";
+  return msg.slice(0,70)||"erreur inconnue";
+}
+/* Cherche une action par nom ou code (sans clé). */
+function codePicker(onPick){
+  var w=el("div",""), row=el("div","srch"), q=textInput("","Ex. : nvidia, total, apple","Nom ou code de l'action à chercher",40);
+  var go=el("button","sav-btn ghost","Chercher"); go.type="button"; row.appendChild(q); row.appendChild(go); w.appendChild(row);
+  var res=el("div",""); w.appendChild(res);
+  var ORDER={"France":0,"United States":1,"Germany":2,"Netherlands":3};
+  function run(){
+    var v=txt(q.value,40); if(!v)return;
+    res.textContent=""; res.appendChild(el("p","hint","Recherche…"));
+    getJSON("https://api.twelvedata.com/symbol_search?outputsize=30&symbol="+encodeURIComponent(v)).then(function(d){
+      res.textContent="";
+      var list=(d&&d.data||[]).filter(function(r){return /Common Stock|ETF|Depositary/i.test(r.instrument_type)})
+        .sort(function(a,b){var x=ORDER[a.country],y=ORDER[b.country];return (x===undefined?9:x)-(y===undefined?9:y)}).slice(0,6);
+      if(!list.length){res.appendChild(el("p","hint","Rien trouvé. Essaie un autre nom ou le code (ex. NVDA)."));return}
+      list.forEach(function(r){
+        var b=el("button","res"); b.type="button";
+        b.appendChild(el("span","t",r.instrument_name)); b.appendChild(el("span","k",r.symbol));
+        b.appendChild(el("span","s",r.exchange+" · "+r.country)); b.appendChild(el("span","s",r.currency));
+        b.addEventListener("click",function(){res.querySelectorAll(".res").forEach(function(x){x.setAttribute("aria-pressed",x===b?"true":"false")});onPick(r)});
+        res.appendChild(b);
+      });
+    }).catch(function(){res.textContent="";res.appendChild(el("p","hint","Recherche impossible : vérifie ta connexion."))});
+  }
+  go.addEventListener("click",run);
+  q.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();run()}});
+  return w;
+}
+/* Met à jour les cours des actions détenues qui ont un code.
+   Formule gratuite : 8 requêtes par minute, donc 8 actions au plus par passage (les plus anciennes d'abord). */
+function fetchQuotes(force){
+  var key=apiKey();
+  if(!key||quoteBusy) return Promise.resolve(null);
+  if(!force&&Date.now()-state.pf.auto<AUTO_EVERY) return Promise.resolve(null);
+  var h=holdings();
+  var todo=state.pf.lines.filter(function(l){return h[l.id].q>0&&l.tk})
+    .sort(function(a,b){return (a.pxd||"")<(b.pxd||"")?-1:1}).slice(0,8)
+    .map(function(l){return {id:l.id,n:l.n,tk:l.tk,mic:l.mic}});
+  if(!todo.length) return Promise.resolve({ok:0,fail:[],none:true});
+  quoteBusy=true; renderAutoStatus();
+  var got=[];
+  var chain=todo.reduce(function(p,x){
+    return p.then(function(){
+      return getJSON("https://api.twelvedata.com/quote?symbol="+encodeURIComponent(x.tk)+(x.mic?"&mic_code="+encodeURIComponent(x.mic):"")+"&apikey="+encodeURIComponent(key))
+        .then(function(d){
+          var c=d&&parseFloat(d.close);
+          if(!d||d.status==="error"||!(c>0)) got.push({x:x,err:shortErr(d&&d.message)});
+          else got.push({x:x,px:c,cur:String(d.currency||"EUR")});
+        },function(){got.push({x:x,err:"pas de connexion"})});
+    });
+  },Promise.resolve());
+  return chain.then(function(){
+    // Conversion en euros : GBp = pence (1/100 de livre)
+    var curs=[];
+    got.forEach(function(g){if(g.px){var pence=g.cur==="GBp"||g.cur==="GBX", c=pence?"GBP":g.cur.toUpperCase();g.cc=c;g.div=pence?100:1;if(c!=="EUR"&&curs.indexOf(c)<0)curs.push(c)}});
+    if(!curs.length) return {};
+    return getJSON("https://api.frankfurter.dev/v1/latest?base=EUR&symbols="+curs.join(",")).then(function(d){return d&&d.rates||{}},function(){return {}});
+  }).then(function(rates){
+    var today=todayISO(), ok=0, fail=[];
+    got.forEach(function(g){
+      var l=pfLine(g.x.id); if(!l) return;
+      if(g.px){
+        var r=g.cc==="EUR"?1:rates[g.cc];
+        if(!r){l.pxe="devise "+g.cc+" non convertie";fail.push(l.n);return}
+        l.px=Math.round(g.px/g.div/r*10000)/10000; l.pxd=today; l.pxe=""; ok++;
+      }else{l.pxe=g.err;fail.push(l.n)}
+    });
+    state.pf.auto=Date.now(); quoteBusy=false;
+    recordSnap(); save(); refresh();
+    return {ok:ok,fail:fail};
+  },function(){quoteBusy=false;renderAutoStatus();return {ok:0,fail:[],offline:true}});
+}
+function quoteSummary(r){
+  if(r.none) return "Aucune action avec un code à mettre à jour. Ajoute le code dans la fiche de l'action.";
+  if(r.offline) return "Pas de connexion : cours non mis à jour.";
+  return r.ok+" cours mis à jour"+(r.fail.length?" · "+r.fail.length+" en échec ("+r.fail.join(", ")+")":"");
+}
+function renderAutoStatus(){
+  var p=$("bxAuto"); p.textContent="";
+  if(!apiKey()){
+    p.appendChild(document.createTextNode("Cours automatiques désactivés. "));
+    var a=el("button","link","Les activer"); a.type="button"; a.style.display="inline"; a.style.margin="0"; a.style.minHeight="0";
+    a.addEventListener("click",function(){show("reglages");setTimeout(function(){$("apiKey").scrollIntoView({block:"center"});$("apiKey").focus()},60)});
+    p.appendChild(a); return;
+  }
+  p.textContent=quoteBusy?"Mise à jour des cours…":state.pf.auto?"Cours mis à jour automatiquement "+ago(state.pf.auto)+".":"Cours automatiques activés.";
+}
+function maybeAutoQuotes(){fetchQuotes(false)}
+
+/* Réglages : clé API */
+$("apiKey").value=apiKey();
+$("apiTest").addEventListener("click",function(){
+  var k=txt($("apiKey").value,80), msg=$("apiMsg"), err=$("apiErr"); msg.textContent=""; err.textContent="";
+  if(!k){err.textContent="Colle d'abord ta clé.";return}
+  msg.textContent="Test en cours…";
+  getJSON("https://api.twelvedata.com/quote?symbol=AAPL&apikey="+encodeURIComponent(k)).then(function(d){
+    if(!d||d.status==="error"){msg.textContent="";err.textContent="Clé refusée : "+shortErr(d&&d.message)+".";return}
+    setApiKey(k); msg.textContent="Clé valide. Mise à jour de tes cours…"; renderAutoStatus();
+    return fetchQuotes(true).then(function(r){msg.textContent="Clé valide. "+(r?quoteSummary(r):"")});
+  }).catch(function(){msg.textContent="";err.textContent="Test impossible : vérifie ta connexion."});
+});
+$("apiDel").addEventListener("click",function(){
+  setApiKey(""); $("apiKey").value=""; $("apiMsg").textContent="Clé retirée : les cours se saisissent à nouveau à la main."; $("apiErr").textContent=""; renderAutoStatus();
+});
+document.addEventListener("visibilitychange",function(){if(!document.hidden)setTimeout(maybeAutoQuotes,800)});
+setTimeout(maybeAutoQuotes,1500);

@@ -291,6 +291,8 @@ try{
         <button class="sav-btn" id="bxAdd" type="button">Nouvelle opération</button>
         <button class="sav-btn ghost" id="bxPx" type="button">Mettre à jour les cours</button>
       </div>
+      <p class="hint" id="bxAuto" style="margin:10px 0 0;text-align:center"></p>
+      <button class="link" id="bxManual" type="button" style="margin-top:2px">Saisir les cours à la main</button>
     </div>
     <div class="card"><h2>Ce mois-ci</h2><div id="bxMonth"></div></div>
     <div class="card"><h2>Mes positions</h2><div id="bxPos"></div></div>
@@ -327,6 +329,21 @@ try{
       <h2>Épargne</h2>
       <div class="row2"><label for="rateIn">Taux du Livret A (% par an)</label><input id="rateIn" class="num" type="text" inputmode="decimal"></div>
       <p class="small-p" style="margin:6px 0 0">Sert aux projections et aux intérêts estimés. Vérifie le taux en vigueur.</p>
+    </div>
+
+    <div class="card">
+      <h2>Cours de bourse automatiques</h2>
+      <p class="small-p">L'appli met à jour seule le cours de tes actions à chaque ouverture (au plus toutes les 30 minutes), avec le service gratuit Twelve Data. Seuls les codes de tes actions lui sont envoyés, jamais tes quantités ni tes montants. Les devises sont converties en euros avec les taux de la BCE (Frankfurter).</p>
+      <ol class="small-p steps">
+        <li>Crée un compte gratuit sur <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a> (formule « Basic », 0 $).</li>
+        <li>Copie ta clé API depuis ton tableau de bord.</li>
+        <li>Colle-la ci-dessous.</li>
+      </ol>
+      <input id="apiKey" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Clé API Twelve Data" aria-label="Clé API Twelve Data">
+      <div class="btns" style="margin-top:10px"><button class="sav-btn" id="apiTest" type="button">Enregistrer et tester</button><button class="sav-btn ghost" id="apiDel" type="button">Retirer la clé</button></div>
+      <p class="msg" id="apiMsg" role="status"></p>
+      <p class="err" id="apiErr" role="alert"></p>
+      <p class="hint" style="margin:10px 0 0">La clé reste sur ce téléphone et n'est pas incluse dans tes sauvegardes.</p>
     </div>
 
     <div class="card">

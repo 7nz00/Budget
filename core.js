@@ -81,7 +81,7 @@ function sanitize(s){
   var pf0=s.pf&&typeof s.pf==="object"?s.pf:{};
   var lines=(Array.isArray(pf0.lines)?pf0.lines:[]).map(function(l){
     if(!l||!txt(l.n,40)) return null;
-    return {id:txt(l.id,20)||uid(),n:txt(l.n,40),tk:txt(l.tk,12).toUpperCase(),c:l.c==="pea"?"pea":"cto",px:num(l.px),pxd:RE_D.test(l.pxd)?l.pxd:""};
+    return {id:txt(l.id,20)||uid(),n:txt(l.n,40),tk:txt(l.tk,16).toUpperCase(),mic:txt(l.mic,8).toUpperCase(),c:l.c==="pea"?"pea":"cto",px:num(l.px),pxd:RE_D.test(l.pxd)?l.pxd:"",pxe:txt(l.pxe,80)};
   }).filter(Boolean).slice(0,100);
   var lineIds=lines.map(function(l){return l.id});
   var tx=(Array.isArray(pf0.tx)?pf0.tx:[]).map(function(t){
@@ -101,7 +101,7 @@ function sanitize(s){
     livret:num(s.livret),
     pea:num(s.pea),
     cto:num(s.cto),
-    pf:{lines:lines,tx:tx,snaps:snaps,peaOpen:RE_M.test(pf0.peaOpen)?pf0.peaOpen:""},
+    pf:{lines:lines,tx:tx,snaps:snaps,peaOpen:RE_M.test(pf0.peaOpen)?pf0.peaOpen:"",auto:typeof pf0.auto==="number"&&isFinite(pf0.auto)?pf0.auto:0},
     ops:ops, goals:goals, extras:extras, spends:spends, quick:quick,
     salary:num(s.salary),
     rows:s.rows.slice(0,200).map(function(r){return {id:txt(r&&r.id,20)||uid(),n:txt(r&&r.n,60),a:num(r&&r.a),c:cats.indexOf(r&&r.c)>-1?r.c:cats[cats.length-1]}}),
