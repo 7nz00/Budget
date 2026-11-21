@@ -91,16 +91,33 @@ function monthBars(months,selected,onPick){
 
 /* courbe d'épargne empilée Livret A / PEA */
 function areaChart(pts,small){
-  var tots=pts.map(function(q){return q.l+q.p}), W=300, H=small?60:140;
+  var tots=pts.map(function(q){return q.l+q.p+(q.c||0)}), W=300, H=small?60:140;
   var max=Math.max.apply(null,tots)||1, mn=Math.min.apply(null,tots);
   var lo=Math.max(0,mn-(max-mn)*0.8-max*0.02); if(max-lo<1)lo=0;
   var X=function(i){return i/(pts.length-1)*W}, Y=function(v){return H-3-Math.max(0,v-lo)/(max-lo)*(H-9)};
   var line=function(f){return pts.map(function(q,i){return (i?"L":"M")+X(i).toFixed(1)+" "+Y(f(q)).toFixed(1)}).join(" ")};
   var close=" L"+W+" "+H+" L0 "+H+" Z";
   return '<svg class="chart'+(small?" sp":"")+'" viewBox="0 0 '+W+" "+H+'" preserveAspectRatio="none" role="img" aria-label="Évolution de ton épargne">'
+    +'<path d="'+line(function(q){return q.l+q.p+(q.c||0)})+close+'" fill="var(--cto)" opacity=".24"/>'
     +'<path d="'+line(function(q){return q.l+q.p})+close+'" fill="var(--pea)" opacity=".26"/>'
     +'<path d="'+line(function(q){return q.l})+close+'" fill="var(--livret)" opacity=".34"/>'
+    +'<path d="'+line(function(q){return q.l+q.p+(q.c||0)})+'" fill="none" stroke="var(--cto)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'
     +'<path d="'+line(function(q){return q.l+q.p})+'" fill="none" stroke="var(--pea)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'
     +'<path d="'+line(function(q){return q.l})+'" fill="none" stroke="var(--livret)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'
+    +"</svg>";
+}
+
+/* portefeuille : valeur (trait plein) et montant investi (pointillés). pts: [{m,v,c}] */
+function pfChart(pts){
+  var W=300, H=140, all=[];
+  pts.forEach(function(q){all.push(q.v,q.c)});
+  var max=Math.max.apply(null,all)||1, mn=Math.min.apply(null,all);
+  var lo=Math.max(0,mn-(max-mn)*0.6-max*0.02); if(max-lo<1)lo=0;
+  var X=function(i){return i/(pts.length-1)*W}, Y=function(v){return H-3-Math.max(0,v-lo)/(max-lo)*(H-9)};
+  var line=function(k){return pts.map(function(q,i){return (i?"L":"M")+X(i).toFixed(1)+" "+Y(q[k]).toFixed(1)}).join(" ")};
+  return '<svg class="chart" viewBox="0 0 '+W+" "+H+'" preserveAspectRatio="none" role="img" aria-label="Valeur du portefeuille et montant investi">'
+    +'<path d="'+line("v")+" L"+W+" "+H+" L0 "+H+' Z" fill="var(--cto)" opacity=".18"/>'
+    +'<path d="'+line("c")+'" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"/>'
+    +'<path d="'+line("v")+'" fill="none" stroke="var(--cto)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'
     +"</svg>";
 }

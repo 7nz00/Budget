@@ -479,3 +479,38 @@ input[type=date],input[type=month]{color-scheme:dark}
 /* titres de cartes neutres, pour que les chiffres ressortent */
 .card h2{color:var(--ink)}
 .stat .k{color:var(--muted)}
+
+/* ===== compte-titres et onglet Bourse ===== */
+:root,:root[data-theme="dark"]{--cto:#f472b6;--up:#34d399;--down:#ff7a8a}
+.seg.c{background:var(--cto)}
+.line.c3 i,.acct.c i{background:var(--cto)}
+#hC,.line.c3 .v,#balC{color:var(--cto)}
+.acct .t small{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.asub{grid-column:2/4;margin:2px 0 0;font-size:13px;color:var(--muted);text-align:right}
+.stats3 .stat .k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.up{color:var(--up)}.down{color:var(--down)}
+.tag{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;vertical-align:2px;letter-spacing:.02em}
+.tag.pea{background:rgba(183,156,255,.18);color:var(--pea)}
+.tag.cto{background:rgba(244,114,182,.18);color:var(--cto)}
+.pos{display:grid;grid-template-columns:1fr auto;gap:2px 12px;width:100%;text-align:left;border:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px 14px;margin-bottom:8px;color:var(--ink)}
+.pos .t{font-weight:700;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pos .v{font-family:var(--num);font-size:18px;text-align:right}
+.pos .s{font-size:13px;color:var(--muted)}
+.pos .g{font-size:13px;font-weight:700;text-align:right}
+.pos .old{color:var(--warn)}
+.mrow{margin-bottom:14px}
+.mrow:last-child{margin-bottom:0}
+.mrow .head{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:6px}
+.mrow .head span:last-child{color:var(--muted);font-weight:600}
+.mrow .fill.p{background:var(--pea)}.mrow .fill.c{background:var(--cto)}
+.taxb{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px 14px;margin-bottom:10px}
+.taxb h3{margin:0 0 6px;font-size:15px}
+.taxb p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.taxb p b{color:var(--ink)}
+.pxrow{display:grid;grid-template-columns:1fr 120px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.pxrow:first-child{border-top:0}
+.pxrow .t{font-weight:700}
+.pxrow .s{font-size:12px;color:var(--muted)}
+.pxrow input{text-align:right}
+.tabs button span{white-space:nowrap}
+@media (max-width:380px){.tabs button{font-size:10px}}

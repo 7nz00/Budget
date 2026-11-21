@@ -39,42 +39,53 @@ function renderEnv(){
 
 /* ===== accueil : jauge ===== */
 function renderGauge(){
-  var t=T(), h1=state.h1, h2=state.h2;
-  var p1=t?h1/t*100:0, p2=t?h2/t*100:0;
-  $("sl").style.width=p1+"%"; $("sp").style.width=(p2-p1)+"%"; $("sd").style.width=(t?100-p2:0)+"%";
-  $("dot1").style.left=p1+"%"; $("dot2").style.left=p2+"%";
-  var d1=$("dot1"),d2=$("dot2");
+  var t=T(), h1=state.h1, h2=state.h2, h3=state.h3;
+  var p1=t?h1/t*100:0, p2=t?h2/t*100:0, p3=t?h3/t*100:0;
+  $("sl").style.width=p1+"%"; $("sp").style.width=(p2-p1)+"%"; $("sc").style.width=(p3-p2)+"%"; $("sd").style.width=(t?100-p3:0)+"%";
+  $("dot1").style.left=p1+"%"; $("dot2").style.left=p2+"%"; $("dot3").style.left=p3+"%";
+  var d1=$("dot1"),d2=$("dot2"),d3=$("dot3");
   d1.setAttribute("aria-valuemax",h2); d1.setAttribute("aria-valuenow",h1); d1.setAttribute("aria-valuetext",eur(h1));
-  d2.setAttribute("aria-valuemin",h1); d2.setAttribute("aria-valuemax",t); d2.setAttribute("aria-valuenow",h2); d2.setAttribute("aria-valuetext",eur(h2));
-  var pea=h2-h1, dep=t-h2;
-  $("vl").textContent=eur(h1); $("vp").textContent=eur(pea); $("vd").textContent=eur(dep);
+  d2.setAttribute("aria-valuemin",h1); d2.setAttribute("aria-valuemax",h3); d2.setAttribute("aria-valuenow",h2); d2.setAttribute("aria-valuetext",eur(h2));
+  d3.setAttribute("aria-valuemin",h2); d3.setAttribute("aria-valuemax",t); d3.setAttribute("aria-valuenow",h3); d3.setAttribute("aria-valuetext",eur(h3));
+  var pea=h2-h1, cto=h3-h2, dep=t-h3;
+  $("vl").textContent=eur(h1); $("vp").textContent=eur(pea); $("vc").textContent=eur(cto); $("vd").textContent=eur(dep);
   var pc=function(v){return t?fmt0.format(v/t*100)+"\u00a0%":"0\u00a0%"};
-  $("pl").textContent=pc(h1); $("pp").textContent=pc(pea); $("pd").textContent=pc(dep);
+  $("pl").textContent=pc(h1); $("pp").textContent=pc(pea); $("pc").textContent=pc(cto); $("pd").textContent=pc(dep);
   $("wk").textContent=eur(dep/4.33)+" par semaine";
   var al=$("alert");
   if(income()-fixed()<=0){al.textContent="Tes dépenses fixes atteignent ou dépassent tes revenus"+(fixed()>income()?" de "+eur(fixed()-income()):"")+". Rien à répartir.";al.classList.add("on")}
   else al.classList.remove("on");
   var sr=$("saveRate"); sr.textContent="";
-  if(income()>0&&h2>0) rich(sr,["Tu épargnes ",{b:eur0(h2)+" par mois"},", soit ",{b:fmt0.format(h2/income()*100)+" %"}," de tes revenus."]);
+  if(income()>0&&h3>0) rich(sr,["Tu mets de côté ",{b:eur0(h3)+" par mois"},", soit ",{b:fmt0.format(h3/income()*100)+" %"}," de tes revenus."]);
 }
 function drag(dot,which){
   var gauge=$("gauge");
-  function set(v){
+  function set(v,k){
+    k=k||which;
     var t=T(); v=Math.min(Math.max(snap(v),0),t);
-    var before=which===1?state.h1:state.h2;
-    if(which===1) state.h1=Math.min(v,state.h2); else state.h2=Math.max(v,state.h1);
-    if((which===1?state.h1:state.h2)!==before) haptic();
+    var key="h"+k, before=state[key];
+    // chaque point reste entre son voisin de gauche et celui de droite
+    var lo=k===1?0:state["h"+(k-1)], hi=k===3?t:state["h"+(k+1)];
+    state[key]=Math.min(Math.max(v,lo),hi);
+    if(state[key]!==before) haptic();
     refresh(); save();
   }
   function fromX(x){var r=gauge.getBoundingClientRect();return (x-r.left)/r.width*T()}
+  function px(k){var r=gauge.getBoundingClientRect(),t=T();return t?state["h"+k]/t*r.width:0}
   dot.addEventListener("pointerdown",function(e){
     e.preventDefault(); dot.setPointerCapture(e.pointerId); dot.focus();
-    function mv(ev){set(fromX(ev.clientX))}
+    // Points qui se chevauchent : le sens du premier glissement choisit lequel bouge
+    // (vers la droite le plus à droite, vers la gauche le plus à gauche), sinon ils resteraient bloqués.
+    var group=[1,2,3].filter(function(k){return Math.abs(px(k)-px(which))<28}), x0=e.clientX, active=group.length>1?0:which;
+    function mv(ev){
+      if(!active){var dx=ev.clientX-x0;if(Math.abs(dx)<3)return;active=dx>0?Math.max.apply(null,group):Math.min.apply(null,group)}
+      set(fromX(ev.clientX),active);
+    }
     function up(){dot.removeEventListener("pointermove",mv);dot.removeEventListener("pointerup",up);dot.removeEventListener("pointercancel",up)}
     dot.addEventListener("pointermove",mv);dot.addEventListener("pointerup",up);dot.addEventListener("pointercancel",up);
   });
   dot.addEventListener("keydown",function(e){
-    var cur=which===1?state.h1:state.h2, k=e.key, nv=null;
+    var cur=state["h"+which], k=e.key, nv=null;
     if(k==="ArrowLeft"||k==="ArrowDown")nv=cur-STEP;
     else if(k==="ArrowRight"||k==="ArrowUp")nv=cur+STEP;
     else if(k==="Home")nv=0; else if(k==="End")nv=T();
@@ -240,7 +251,7 @@ function updateTotals(){
   refresh(); save();
 }
 function refresh(){
-  renderGauge(); renderEnv(); renderSavings(); renderMois(); renderInsights();
+  renderGauge(); renderEnv(); renderSavings(); renderMois(); renderInsights(); renderBourse();
 }
 
 /* ===== mois ===== */

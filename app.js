@@ -53,7 +53,7 @@ function renderGoals(){
 }
 function openGoalSheet(g){
   openSheet(g?"Modifier l'objectif":"Nouvel objectif",function(body){
-    var acct=el("select"); [["livret","Livret A"],["pea","PEA"],["total","Épargne totale"]].forEach(function(z){var o=el("option","",z[1]);o.value=z[0];if(g&&g.c===z[0])o.selected=true;acct.appendChild(o)});
+    var acct=el("select"); [["livret","Livret A"],["pea","PEA"],["cto","Compte-titres"],["total","Épargne totale"]].forEach(function(z){var o=el("option","",z[1]);o.value=z[0];if(g&&g.c===z[0])o.selected=true;acct.appendChild(o)});
     var amt=amountInput(g?g.t:0,"Montant de l'objectif en euros"); amt.placeholder="5 000";
     var name=el("input"); name.type="text"; name.maxLength=40; name.value=g?g.n:""; name.placeholder="Ex. : voyage, permis…"; name.setAttribute("aria-label","Nom de l'objectif");
     var by=el("input"); by.type="month"; by.value=g?g.by:""; by.setAttribute("aria-label","Date limite");
@@ -82,16 +82,24 @@ function openGoalSheet(g){
 $("newGoal").addEventListener("click",function(){openGoalSheet(null)});
 
 /* ===== épargne ===== */
-function setBalances(){$("balL").value=state.livret?fmt.format(state.livret):"";$("balP").value=state.pea?fmt.format(state.pea):""}
+function setBalances(){
+  $("balL").value=state.livret?fmt.format(state.livret):"";
+  $("balP").value=state.pea?fmt.format(state.pea):"";
+  $("balC").value=state.cto?fmt.format(state.cto):"";
+}
 function renderSavings(){
-  var tot=state.livret+state.pea;
+  var tot=balanceOf("total");
   $("patri").textContent=eur(tot); $("hSav").textContent=eur(tot);
-  $("hL").textContent=eur(state.livret); $("hP").textContent=eur(state.pea);
+  $("hL").textContent=eur0(state.livret); $("hP").textContent=eur0(peaTotal()); $("hC").textContent=eur0(ctoTotal());
+  [["pea","subP"],["cto","subC"]].forEach(function(x){
+    var t=titres(x[0]), sub=$(x[1]);
+    sub.hidden=!t; sub.textContent="+ "+eur(t)+" en actions · total "+eur(balanceOf(x[0]));
+  });
   var pts=series(), sp=$("hSpark"); sp.textContent="";
   if(pts.length>=2) sp.innerHTML=areaChart(pts,true);
-  var l=state.h1, p=state.h2-state.h1, e=currentDepot();
-  $("preview").textContent="Ce mois : +"+eur(l)+" sur le Livret A, +"+eur(p)+" sur le PEA";
-  var btn=$("addSav"), same=e&&e.l===l&&e.p===p;
+  var l=state.h1, p=planPea(), c=planCto(), e=currentDepot();
+  $("preview").textContent="Ce mois : +"+eur(l)+" sur le Livret A, +"+eur(p)+" sur le PEA"+(c?", +"+eur(c)+" sur le compte-titres":"");
+  var btn=$("addSav"), same=e&&e.l===l&&e.p===p&&e.t===c;
   btn.disabled=!!same;
   btn.textContent=same?"Ce mois est déjà ajouté":(e?"Mettre à jour ce mois":"Ajouter ce mois au suivi");
   $("undoSav").hidden=!e;
@@ -110,7 +118,7 @@ function renderChart(){
   var s2=el("span","num"); s2.appendChild(document.createTextNode(monthShort(z.m)+" : ")); s2.appendChild(el("b","",eur0(z.l+z.p)));
   cap2.appendChild(s1); cap2.appendChild(s2); box.appendChild(cap2);
   var lg=el("div","lg");
-  [["var(--livret)","Livret A"],["var(--pea)","PEA (empilé)"],["var(--muted)","échelle zoomée"]].forEach(function(x){
+  [["var(--livret)","Livret A"],["var(--pea)","PEA"],["var(--cto)","Compte-titres"],["var(--muted)","empilés, échelle zoomée"]].forEach(function(x){
     var s=el("span",""),i=el("i","dotc");i.style.background=x[0];s.appendChild(i);s.appendChild(document.createTextNode(x[1]));lg.appendChild(s);
   });
   box.appendChild(lg);
@@ -124,14 +132,15 @@ function renderProj(){
   box.appendChild(st);
   var p12=project(12), n=el("p","small-p");
   n.style.margin="12px 0 0";
-  n.textContent="Si tu gardes ta répartition actuelle ("+eur0(state.h1)+" sur le Livret A, "+eur0(state.h2-state.h1)+" sur le PEA par mois). Intérêts du Livret A à "+fmt.format(state.rate)+" % : environ "+eur0(p12.interest)+" sur 12 mois. PEA sans rendement.";
+  n.textContent="Si tu gardes ta répartition actuelle ("+eur0(state.h1)+" sur le Livret A, "+eur0(planPea())+" sur le PEA, "+eur0(planCto())+" sur le compte-titres par mois). Intérêts du Livret A à "+fmt.format(state.rate)+" % : environ "+eur0(p12.interest)+" sur 12 mois. Actions comptées sans hausse ni baisse.";
   box.appendChild(n);
 }
 $("balL").addEventListener("input",function(){state.livret=num(this.value);renderSavings();save()});
-$("balP").addEventListener("input",function(){state.pea=num(this.value);renderSavings();save()});
+$("balP").addEventListener("input",function(){state.pea=num(this.value);renderSavings();renderBourse();save()});
+$("balC").addEventListener("input",function(){state.cto=num(this.value);renderSavings();renderBourse();save()});
 $("addSav").addEventListener("click",function(){
   var e=currentDepot(); if(e){applyOp(e,-1);state.ops=state.ops.filter(function(o){return o!==e})}
-  var o={id:uid(),k:"depot",m:monthKey(),l:state.h1,p:state.h2-state.h1};
+  var o={id:uid(),k:"depot",m:monthKey(),l:state.h1,p:planPea(),t:planCto()};
   state.ops.push(o); applyOp(o,1); setBalances(); renderOps(); refresh(); save(); haptic();
 });
 $("undoSav").addEventListener("click",function(){
@@ -154,13 +163,13 @@ $("opForm").addEventListener("submit",function(e){
   if(!RE_M.test(m)){err.textContent="Mois invalide.";return}
   err.textContent="";
   var o={id:uid(),k:ui.opKind,m:m,c:$("opAcct").value,a:a};
-  if(ui.opKind==="retrait"){var bal=o.c==="pea"?state.pea:state.livret;if(a>bal){err.textContent="Retrait supérieur au solde ("+eur(bal)+").";return}}
+  if(ui.opKind==="retrait"){var bal=cashOf(o.c);if(a>bal){err.textContent="Retrait supérieur aux espèces disponibles ("+eur(bal)+").";return}}
   state.ops.push(o); applyOp(o,1); $("opAmt").value=""; setBalances(); renderOps(); refresh(); save();
   haptic(); showToast(ui.opKind==="retrait"?"Retrait enregistré":"Versement enregistré",null);
 });
 function opInfo(o){
-  if(o.k==="depot") return {t:"Versement du mois",s:"Livret A "+sg(o.l)+" · PEA "+sg(o.p),v:o.l+o.p};
-  var nm=o.c==="pea"?"PEA":"Livret A";
+  if(o.k==="depot") return {t:"Versement du mois",s:"Livret A "+sg(o.l)+" · PEA "+sg(o.p)+(o.t?" · CTO "+sg(o.t):""),v:o.l+o.p+o.t};
+  var nm=acctLabel(o.c);
   return o.k==="versement"?{t:"Versement",s:nm,v:o.a}:{t:"Retrait",s:nm,v:-o.a};
 }
 function renderOps(){
@@ -184,12 +193,12 @@ function openOpSheet(o){
   openSheet(opInfo(o).t,function(body){
     var month=el("input"); month.type="month"; month.value=o.m;
     body.appendChild(field("Mois",month));
-    var l,p,a,c;
+    var l,p,t,a,c;
     if(o.k==="depot"){
-      l=amountInput(o.l,"Montant Livret A"); p=amountInput(o.p,"Montant PEA");
-      body.appendChild(field("Livret A (€)",l)); body.appendChild(field("PEA (€)",p));
+      l=amountInput(o.l,"Montant Livret A"); p=amountInput(o.p,"Montant PEA"); t=amountInput(o.t,"Montant compte-titres");
+      body.appendChild(field("Livret A (€)",l)); body.appendChild(field("PEA (€)",p)); body.appendChild(field("Compte-titres (€)",t));
     }else{
-      c=el("select"); [["livret","Livret A"],["pea","PEA"]].forEach(function(z){var op=el("option","",z[1]);op.value=z[0];if(o.c===z[0])op.selected=true;c.appendChild(op)});
+      c=el("select"); [["livret","Livret A"],["pea","PEA"],["cto","Compte-titres"]].forEach(function(z){var op=el("option","",z[1]);op.value=z[0];if(o.c===z[0])op.selected=true;c.appendChild(op)});
       a=amountInput(o.a,"Montant");
       body.appendChild(field("Compte",c)); body.appendChild(field("Montant (€)",a));
     }
@@ -201,7 +210,7 @@ function openOpSheet(o){
       if(!RE_M.test(month.value)){err.textContent="Mois invalide.";return}
       if(o.k==="depot"&&state.ops.some(function(z){return z!==o&&z.k==="depot"&&z.m===month.value})){err.textContent="Un versement du mois existe déjà pour ce mois.";return}
       var n;
-      if(o.k==="depot")n={id:o.id,k:"depot",m:month.value,l:num(l.value),p:num(p.value)};
+      if(o.k==="depot")n={id:o.id,k:"depot",m:month.value,l:num(l.value),p:num(p.value),t:num(t.value)};
       else{n={id:o.id,k:o.k,m:month.value,c:c.value,a:num(a.value)};if(!n.a){err.textContent="Indique un montant.";return}}
       applyOp(o,-1); applyOp(n,1);
       state.ops[state.ops.indexOf(o)]=n;
@@ -508,7 +517,7 @@ $("newCat").addEventListener("submit",function(e){
 $("catName").addEventListener("input",function(){$("catErr").textContent=""});
 
 /* ===== navigation ===== */
-var VIEWS={home:"vHome",fixes:"vFixes",mois:"vMois",epargne:"vEpargne",reglages:"vReglages"};
+var VIEWS={home:"vHome",fixes:"vFixes",mois:"vMois",epargne:"vEpargne",bourse:"vBourse",reglages:"vReglages"};
 function show(v){
   if(!VIEWS[v])v="home";
   Object.keys(VIEWS).forEach(function(k){
@@ -554,14 +563,14 @@ function renderAll(){
 }
 
 /* ===== démarrage ===== */
-drag($("dot1"),1); drag($("dot2"),2);
+drag($("dot1"),1); drag($("dot2"),2); drag($("dot3"),3);
 function setMonth(){$("month").textContent=monthLong(monthKey())}
 setMonth();
 document.addEventListener("visibilitychange",function(){
   if(!document.hidden){setMonth();$("spDate").max=todayISO();refresh()}
 });
-$("simInit").value=state.pea?fmt.format(state.pea):"0";
-$("simMonth").value=fmt.format(Math.max(0,state.h2-state.h1)); $("simYears").value="10"; $("simRate").value=fmt.format(state.simRate);
+$("simInit").value=fmt.format(r2(peaTotal()));
+$("simMonth").value=fmt.format(Math.max(0,planPea())); $("simYears").value="10"; $("simRate").value=fmt.format(state.simRate);
 renderAll();
 show(location.hash.slice(1));
 setTimeout(function(){var s=$("splash");if(s)s.remove()},2300);

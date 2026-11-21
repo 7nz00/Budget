@@ -9,6 +9,9 @@ var ACCENT_HEX={green:"#0f9d6b",blue:"#2f6fed",orange:"#d9660f",rose:"#cf2e66",s
 var fmt=new Intl.NumberFormat("fr-FR",{maximumFractionDigits:2});
 var fmt0=new Intl.NumberFormat("fr-FR",{maximumFractionDigits:0});
 var RE_M=/^\d{4}-\d{2}$/, RE_D=/^\d{4}-\d{2}-\d{2}$/;
+var ACCTS=["livret","pea","cto"];
+// Fiscalité 2026 : prélèvements sociaux 18,6 % (PS ci-dessus) + impôt 12,8 % = flat tax 31,4 %.
+var IR=0.128, PEA_CAP=150000;
 
 /* ===== outils ===== */
 function $(id){return document.getElementById(id)}
@@ -43,9 +46,9 @@ function daysLeft(){var d=new Date();return daysIn(monthKey())-d.getDate()+1}
 /* ===== données ===== */
 function makeDefault(){
   return {theme:"auto",accent:"green",rate:1.5,mig:false,cats:DEF_FCATS.slice(),vcats:DEF_VCATS.slice(),
-    livret:0,pea:0,ops:[],goals:[],extras:[],spends:[],
+    livret:0,pea:0,cto:0,ops:[],goals:[],extras:[],spends:[],
     quick:[{n:"Repas du midi",a:8,c:"Restau"},{n:"Café",a:3,c:"Restau"},{n:"Plaisir",a:15,c:"Loisirs"}],
-    salary:0,rows:[],h1:0,h2:0};
+    salary:0,rows:[],h1:0,h2:0,h3:0,pf:{lines:[],tx:[],snaps:[],peaOpen:""}};
 }
 function cleanList(arr,def,max,len){
   var out=[];
@@ -59,12 +62,12 @@ function sanitize(s){
   var oldOps=Array.isArray(s.ops)?s.ops:(Array.isArray(s.hist)?s.hist:[]);
   var ops=oldOps.map(function(h){
     if(!h||!RE_M.test(h.m)) return null;
-    if(h.k==="retrait"||h.k==="versement") return {id:txt(h.id,20)||uid(),k:h.k,m:h.m,c:h.c==="pea"?"pea":"livret",a:num(h.a)};
-    return {id:txt(h.id,20)||uid(),k:"depot",m:h.m,l:num(h.l),p:num(h.p)};
+    if(h.k==="retrait"||h.k==="versement") return {id:txt(h.id,20)||uid(),k:h.k,m:h.m,c:ACCTS.indexOf(h.c)>-1?h.c:"livret",a:num(h.a)};
+    return {id:txt(h.id,20)||uid(),k:"depot",m:h.m,l:num(h.l),p:num(h.p),t:num(h.t)};
   }).filter(Boolean).slice(-400);
   var goals=(Array.isArray(s.goals)?s.goals:[]).map(function(g){
     if(!g||!(num(g.t)>0)) return null;
-    return {id:txt(g.id,20)||uid(),n:txt(g.n,40),c:g.c==="livret"||g.c==="pea"?g.c:"total",t:num(g.t),by:RE_M.test(g.by)?g.by:""};
+    return {id:txt(g.id,20)||uid(),n:txt(g.n,40),c:ACCTS.indexOf(g.c)>-1?g.c:"total",t:num(g.t),by:RE_M.test(g.by)?g.by:""};
   }).filter(Boolean).slice(0,20);
   var extras=(Array.isArray(s.extras)?s.extras:[]).map(function(e){return {n:txt(e&&e.n,40),a:num(e&&e.a)}}).slice(0,20);
   var spends=(Array.isArray(s.spends)?s.spends:[]).map(function(p){
@@ -75,6 +78,20 @@ function sanitize(s){
     return {n:txt(q&&q.n,30),a:num(q&&q.a),c:vcats.indexOf(q&&q.c)>-1?q.c:vlast};
   }).filter(function(q){return q.n&&q.a>0}).slice(0,12);
   var rate=s.rate===undefined?1.5:Math.min(20,num(s.rate));
+  var pf0=s.pf&&typeof s.pf==="object"?s.pf:{};
+  var lines=(Array.isArray(pf0.lines)?pf0.lines:[]).map(function(l){
+    if(!l||!txt(l.n,40)) return null;
+    return {id:txt(l.id,20)||uid(),n:txt(l.n,40),tk:txt(l.tk,12).toUpperCase(),c:l.c==="pea"?"pea":"cto",px:num(l.px),pxd:RE_D.test(l.pxd)?l.pxd:""};
+  }).filter(Boolean).slice(0,100);
+  var lineIds=lines.map(function(l){return l.id});
+  var tx=(Array.isArray(pf0.tx)?pf0.tx:[]).map(function(t){
+    if(!t||!RE_D.test(t.d)||lineIds.indexOf(t.l)<0||["achat","vente","div"].indexOf(t.k)<0) return null;
+    var o={id:txt(t.id,20)||uid(),d:t.d,k:t.k,l:t.l,c:t.c==="pea"?"pea":"cto",q:num(t.q),p:num(t.p),f:num(t.f),a:num(t.a)};
+    if(o.k==="div"?!(o.a>0):!(o.q>0&&o.p>0)) return null;
+    return o;
+  }).filter(Boolean).slice(-2000);
+  var snaps=(Array.isArray(pf0.snaps)?pf0.snaps:[]).filter(function(x){return x&&RE_M.test(x.m)})
+    .map(function(x){return {m:x.m,v:num(x.v),c:num(x.c)}}).slice(-120);
   return {
     theme:s.theme==="dark"||s.theme==="light"?s.theme:"auto",
     accent:ACCENTS.indexOf(s.accent)>-1?s.accent:"green",
@@ -83,10 +100,13 @@ function sanitize(s){
     cats:cats, vcats:vcats,
     livret:num(s.livret),
     pea:num(s.pea),
+    cto:num(s.cto),
+    pf:{lines:lines,tx:tx,snaps:snaps,peaOpen:RE_M.test(pf0.peaOpen)?pf0.peaOpen:""},
     ops:ops, goals:goals, extras:extras, spends:spends, quick:quick,
     salary:num(s.salary),
     rows:s.rows.slice(0,200).map(function(r){return {id:txt(r&&r.id,20)||uid(),n:txt(r&&r.n,60),a:num(r&&r.a),c:cats.indexOf(r&&r.c)>-1?r.c:cats[cats.length-1]}}),
-    h1:num(s.h1),h2:num(s.h2)
+    // h3 = fin de la part compte-titres ; les anciennes données n'en ont pas : part CTO à 0.
+    h1:num(s.h1),h2:num(s.h2),h3:s.h3===undefined?num(s.h2):num(s.h3)
   };
 }
 var state, v1Raw=null;
@@ -112,49 +132,62 @@ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().
 function income(){return state.salary+state.extras.reduce(function(s,e){return s+e.a},0)}
 function fixed(){return state.rows.reduce(function(s,r){return s+r.a},0)}
 function T(){return Math.max(0,income()-fixed())}
-function env(){return Math.max(0,T()-state.h2)}
+/* Jauge : h1 = Livret A, h2 = Livret A + PEA, h3 = Livret A + PEA + compte-titres, le reste = dépenses. */
+function env(){return Math.max(0,T()-state.h3)}
 function snap(v){return Math.round(v/STEP)*STEP}
-function clamp(){var t=T();state.h2=Math.min(Math.max(state.h2,0),t);state.h1=Math.min(Math.max(state.h1,0),state.h2)}
+function clamp(){
+  var t=T();
+  state.h3=Math.min(Math.max(state.h3,0),t);
+  state.h2=Math.min(Math.max(state.h2,0),state.h3);
+  state.h1=Math.min(Math.max(state.h1,0),state.h2);
+}
+function planPea(){return state.h2-state.h1}
+function planCto(){return state.h3-state.h2}
 function spendsOf(m){return state.spends.filter(function(p){return p.d.slice(0,7)===m})}
 function spentOf(m){return spendsOf(m).reduce(function(s,p){return s+p.a},0)}
 function netSaved(m){
   return state.ops.reduce(function(s,o){
     if(o.m!==m) return s;
-    return s+(o.k==="depot"?o.l+o.p:o.k==="versement"?o.a:-o.a);
+    return s+(o.k==="depot"?o.l+o.p+o.t:o.k==="versement"?o.a:-o.a);
   },0);
 }
 function vcol(c){var i=state.vcats.indexOf(c);return PALETTE[(i<0?PALETTE.length-1:i)%PALETTE.length]}
 function fcol(c){var i=state.cats.indexOf(c);return PALETTE[(i<0?PALETTE.length-1:i)%PALETTE.length]}
 function currentDepot(){return state.ops.filter(function(o){return o.k==="depot"&&o.m===monthKey()})[0]}
+/* Mouvement d'épargne -> variation [Livret A, espèces PEA, espèces compte-titres] */
 function opDelta(o){
-  if(o.k==="depot") return [o.l,o.p];
+  if(o.k==="depot") return [o.l,o.p,o.t];
   var d=o.k==="versement"?o.a:-o.a;
-  return o.c==="pea"?[0,d]:[d,0];
+  return o.c==="pea"?[0,d,0]:o.c==="cto"?[0,0,d]:[d,0,0];
 }
 function applyOp(o,sign){
   var d=opDelta(o);
   state.livret=Math.max(0,r2(state.livret+sign*d[0]));
   state.pea=Math.max(0,r2(state.pea+sign*d[1]));
+  state.cto=Math.max(0,r2(state.cto+sign*d[2]));
 }
-function balanceOf(c){return c==="pea"?state.pea:c==="livret"?state.livret:state.livret+state.pea}
-function monthlyRate(c){return c==="livret"?state.h1:c==="pea"?state.h2-state.h1:state.h2}
-function acctLabel(c){return c==="pea"?"PEA":c==="livret"?"Livret A":"Épargne totale"}
-function acctColor(c){return c==="pea"?"var(--pea)":c==="livret"?"var(--livret)":"var(--accent)"}
+/* PEA et compte-titres = espèces + valeur des actions (voir bourse.js) */
+function balanceOf(c){return c==="pea"?peaTotal():c==="cto"?ctoTotal():c==="livret"?state.livret:state.livret+peaTotal()+ctoTotal()}
+function cashOf(c){return c==="pea"?state.pea:c==="cto"?state.cto:state.livret}
+function monthlyRate(c){return c==="livret"?state.h1:c==="pea"?planPea():c==="cto"?planCto():state.h3}
+function acctLabel(c){return c==="pea"?"PEA":c==="cto"?"Compte-titres":c==="livret"?"Livret A":"Épargne totale"}
+function acctColor(c){return c==="pea"?"var(--pea)":c==="cto"?"var(--cto)":c==="livret"?"var(--livret)":"var(--accent)"}
 function series(){
   var cur=monthKey(), first=cur, m, out=[];
   state.ops.forEach(function(o){if(o.m<first)first=o.m});
   for(m=first;m<=cur;m=mAdd(m,1)) out.push(m);
   out=out.slice(-24);
+  var L=state.livret, P=peaTotal(), C=ctoTotal();
   return out.map(function(k){
-    var l=state.livret,p=state.pea;
-    state.ops.forEach(function(o){if(o.m>k){var d=opDelta(o);l-=d[0];p-=d[1]}});
-    return {m:k,l:Math.max(0,l),p:Math.max(0,p)};
+    var l=L,p=P,c=C;
+    state.ops.forEach(function(o){if(o.m>k){var d=opDelta(o);l-=d[0];p-=d[1];c-=d[2]}});
+    return {m:k,l:Math.max(0,l),p:Math.max(0,p),c:Math.max(0,c)};
   });
 }
 function project(months){
-  var l=state.livret,p=state.pea,r=state.rate/100/12,i,interest=0;
-  for(i=0;i<months;i++){var g=l*r;interest+=g;l=l+g+state.h1;p+=state.h2-state.h1}
-  return {l:l,p:p,total:l+p,interest:interest};
+  var l=state.livret,p=peaTotal(),c=ctoTotal(),r=state.rate/100/12,i,interest=0;
+  for(i=0;i<months;i++){var g=l*r;interest+=g;l=l+g+state.h1;p+=planPea();c+=planCto()}
+  return {l:l,p:p,c:c,total:l+p+c,interest:interest};
 }
 
 /* ===== haptique ===== */

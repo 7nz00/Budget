@@ -1,5 +1,5 @@
-const CACHE = "budget3c-v7";
-const FILES = ["./", "index.html", "styles.css", "core.js", "charts.js", "views.js", "app.js", "manifest.webmanifest",
+const CACHE = "budget3c-v8";
+const FILES = ["./", "index.html", "styles.css", "core.js", "charts.js", "views.js", "bourse.js", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {

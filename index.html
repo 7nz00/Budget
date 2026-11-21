@@ -101,15 +101,17 @@ try{
       <h2>Répartition du reste</h2>
       <div class="stat good wide"><div class="k">Reste à vivre à répartir</div><div class="v num" id="reste2">0 €</div></div>
       <p class="alert" id="alert" role="status"></p>
-      <p class="hint">Déplace les deux points pour partager ton reste.</p>
+      <p class="hint">Déplace les trois points pour partager ton reste.</p>
       <div class="gauge" id="gauge">
-        <div class="bar"><div class="seg l" id="sl"></div><div class="seg p" id="sp"></div><div class="seg d" id="sd"></div></div>
+        <div class="bar"><div class="seg l" id="sl"></div><div class="seg p" id="sp"></div><div class="seg c" id="sc"></div><div class="seg d" id="sd"></div></div>
         <button class="dot" id="dot1" type="button" role="slider" aria-label="Montant du Livret A" aria-valuemin="0"></button>
         <button class="dot" id="dot2" type="button" role="slider" aria-label="Fin du PEA (Livret A plus PEA)" aria-valuemin="0"></button>
+        <button class="dot" id="dot3" type="button" role="slider" aria-label="Fin du compte-titres (Livret A, PEA et compte-titres)" aria-valuemin="0"></button>
       </div>
       <div class="lines">
         <div class="line l"><i></i><span class="t">Livret A</span><span class="v num" id="vl"></span><span class="s">Épargne dispo</span><span class="p num" id="pl"></span></div>
-        <div class="line p2"><i></i><span class="t">PEA</span><span class="v num" id="vp"></span><span class="s">Long terme</span><span class="p num" id="pp"></span></div>
+        <div class="line p2"><i></i><span class="t">PEA</span><span class="v num" id="vp"></span><span class="s">Actions européennes</span><span class="p num" id="pp"></span></div>
+        <div class="line c3"><i></i><span class="t">Compte-titres</span><span class="v num" id="vc"></span><span class="s">Bourse (Nvidia…)</span><span class="p num" id="pc"></span></div>
         <div class="line d"><i></i><span class="t">Dépenses du mois</span><span class="v num" id="vd"></span><span class="s num" id="wk"></span><span class="p num" id="pd"></span></div>
       </div>
       <p class="rate" id="saveRate"></p>
@@ -119,9 +121,10 @@ try{
       <div class="cardhead"><h2>Mon épargne</h2><button class="more" id="goSav" type="button">Détails</button></div>
       <div class="patri"><b class="num" id="hSav">0 €</b><span>au total</span></div>
       <div class="spark" id="hSpark"></div>
-      <div class="stats">
+      <div class="stats3">
         <div class="stat"><div class="k"><i class="dotc" style="background:var(--livret)"></i>Livret A</div><div class="v num" id="hL">0 €</div></div>
         <div class="stat"><div class="k"><i class="dotc" style="background:var(--pea)"></i>PEA</div><div class="v num" id="hP">0 €</div></div>
+        <div class="stat"><div class="k"><i class="dotc" style="background:var(--cto)"></i>CTO</div><div class="v num" id="hC">0 €</div></div>
       </div>
       <div id="hGoals"></div>
     </div>
@@ -218,8 +221,12 @@ try{
       <div class="patri"><b class="num" id="patri">0 €</b><span>au total</span></div>
       <div class="acct l"><i></i><div class="t">Livret A</div>
         <div class="bal"><input id="balL" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Solde du Livret A en euros"><span>€</span></div></div>
-      <div class="acct p"><i></i><div class="t">PEA</div>
-        <div class="bal"><input id="balP" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Solde du PEA en euros"><span>€</span></div></div>
+      <div class="acct p"><i></i><div class="t">PEA<small>espèces</small></div>
+        <div class="bal"><input id="balP" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Espèces sur le PEA en euros"><span>€</span></div>
+        <p class="asub num" id="subP" hidden></p></div>
+      <div class="acct c"><i></i><div class="t">Compte-titres<small>espèces</small></div>
+        <div class="bal"><input id="balC" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Espèces sur le compte-titres en euros"><span>€</span></div>
+        <p class="asub num" id="subC" hidden></p></div>
       <p class="preview num" id="preview"></p>
       <button class="sav-btn" id="addSav" type="button"></button>
       <button class="link" id="undoSav" type="button" hidden>Annuler l'ajout de ce mois</button>
@@ -246,7 +253,7 @@ try{
           <button type="button" data-k="retrait" aria-pressed="false">Retrait</button>
         </div>
         <div class="grid2">
-          <select id="opAcct" aria-label="Compte"><option value="livret">Livret A</option><option value="pea">PEA</option></select>
+          <select id="opAcct" aria-label="Compte"><option value="livret">Livret A</option><option value="pea">PEA</option><option value="cto">Compte-titres</option></select>
           <input id="opAmt" class="num" type="text" inputmode="decimal" placeholder="Montant" aria-label="Montant en euros" style="text-align:right">
         </div>
         <label class="label field-l" for="opMonth">Mois concerné</label>
@@ -270,6 +277,35 @@ try{
       <div class="chips sim-presets" id="simPresets" role="group" aria-label="Rendements types"></div>
       <div class="sim-out" id="simOut"></div>
       <p class="hint" style="margin:12px 0 0">Projection indicative, sans frais, rendement non garanti. Les prélèvements sociaux (18,6 % des gains) sont déduits à partir de 5 ans.</p>
+    </div>
+  </div>
+
+  <!-- BOURSE -->
+  <div class="view" id="vBourse" hidden>
+    <div class="card hero">
+      <h2>Mon portefeuille</h2>
+      <div class="patri"><b class="num" id="bxTot">0 €</b><span>PEA + compte-titres</span></div>
+      <p class="sub-text num" id="bxSub"></p>
+      <div class="stats3" id="bxStats"></div>
+      <div class="btns" style="margin-top:14px;grid-template-columns:1fr">
+        <button class="sav-btn" id="bxAdd" type="button">Nouvelle opération</button>
+        <button class="sav-btn ghost" id="bxPx" type="button">Mettre à jour les cours</button>
+      </div>
+    </div>
+    <div class="card"><h2>Ce mois-ci</h2><div id="bxMonth"></div></div>
+    <div class="card"><h2>Mes positions</h2><div id="bxPos"></div></div>
+    <div class="card"><h2>Répartition</h2><div id="bxDonut"></div></div>
+    <div class="card"><h2>Évolution</h2><div id="bxChart"></div></div>
+    <div class="card">
+      <h2>Impôts estimés</h2>
+      <div id="bxTax"></div>
+      <div class="row2" style="margin-top:14px"><label for="bxPeaOpen">PEA ouvert en</label><input id="bxPeaOpen" type="month" style="width:auto"></div>
+      <p class="hint" style="margin:8px 0 0">Estimation simplifiée aux taux 2026 : flat tax 31,4 % sur le compte-titres, 18,6 % de prélèvements sociaux sur les gains d'un PEA de plus de 5 ans. Ne remplace pas ta déclaration.</p>
+    </div>
+    <div class="card">
+      <h2>Opérations</h2>
+      <div id="bxTx"></div>
+      <button class="link" id="bxTxMore" type="button" hidden></button>
     </div>
   </div>
 
@@ -359,6 +395,7 @@ try{
   <button type="button" data-view="fixes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Fixes</span></button>
   <button type="button" data-view="mois"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Mois</span></button>
   <button type="button" data-view="epargne"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span>Épargne</span></button>
+  <button type="button" data-view="bourse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v4M7 16v5M17 3v2M17 14v7"/><rect x="4.5" y="7" width="5" height="9" rx="1.5"/><rect x="14.5" y="5" width="5" height="9" rx="1.5"/></svg><span>Bourse</span></button>
   <button type="button" data-view="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Réglages</span></button>
 </nav>
 
@@ -367,7 +404,8 @@ try{
 
 <script src="core.js"></script>
 <script src="charts.js"></script>
-<script src="views.js"></script>
+<script src="views.js"></script>
+<script src="bourse.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
