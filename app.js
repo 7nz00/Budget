@@ -91,9 +91,14 @@ function renderSavings(){
   var tot=balanceOf("total");
   $("patri").textContent=eur(tot); $("hSav").textContent=eur(tot);
   $("hL").textContent=eur0(state.livret); $("hP").textContent=eur0(peaTotal()); $("hC").textContent=eur0(ctoTotal());
-  [["pea","subP"],["cto","subC"]].forEach(function(x){
-    var t=titres(x[0]), sub=$(x[1]);
-    sub.hidden=!t; sub.textContent="+ "+eur(t)+" en actions · total "+eur(balanceOf(x[0]));
+  // PEA / compte-titres : total en grand, espèces modifiables + actions en dessous,
+  // et le montant prévu par la jauge tant que le mois n'est pas ajouté au suivi.
+  var dep=currentDepot();
+  [["pea","P",planPea()],["cto","C",planCto()]].forEach(function(x){
+    var t=titres(x[0]);
+    $("tot"+x[1]).textContent=eur(balanceOf(x[0]));
+    $("act"+x[1]).textContent=t?"+ "+eur(t)+" en actions":"";
+    $("plan"+x[1]).textContent=!dep&&x[2]>0?"+"+eur0(x[2])+" prévus ce mois":"";
   });
   var pts=series(), sp=$("hSpark"); sp.textContent="";
   if(pts.length>=2) sp.innerHTML=areaChart(pts,true);
@@ -101,7 +106,7 @@ function renderSavings(){
   $("preview").textContent="Ce mois : +"+eur(l)+" sur le Livret A, +"+eur(p)+" sur le PEA"+(c?", +"+eur(c)+" sur le compte-titres":"");
   var btn=$("addSav"), same=e&&e.l===l&&e.p===p&&e.t===c;
   btn.disabled=!!same;
-  btn.textContent=same?"Ce mois est déjà ajouté":(e?"Mettre à jour ce mois":"Ajouter ce mois au suivi");
+  btn.textContent=same?"Ce mois est déjà ajouté":(e?"Mettre à jour ce mois":"Ajouter ce mois au suivi · +"+eur0(l+p+c));
   $("undoSav").hidden=!e;
   $("remind").hidden=!!e;
   $("remindText").textContent="Pense à ajouter "+monthLong(monthKey()).toLowerCase()+" à ton épargne.";

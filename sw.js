@@ -1,4 +1,4 @@
-const CACHE = "budget3c-v9";
+const CACHE = "budget3c-v11";
 const FILES = ["./", "index.html", "styles.css", "core.js", "charts.js", "views.js", "bourse.js", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
@@ -22,7 +22,7 @@ self.addEventListener("fetch", (e) => {
   e.respondWith(
     caches.open(CACHE).then((cache) =>
       cache.match(e.request).then((hit) => {
-        const net = fetch(e.request).then((res) => {
+        const net = fetch(e.request.url, { cache: "no-cache", credentials: "same-origin" }).then((res) => {
           if (res && res.ok) cache.put(e.request, res.clone());
           return res;
         }).catch(() => hit);

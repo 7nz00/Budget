@@ -221,12 +221,12 @@ try{
       <div class="patri"><b class="num" id="patri">0 €</b><span>au total</span></div>
       <div class="acct l"><i></i><div class="t">Livret A</div>
         <div class="bal"><input id="balL" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Solde du Livret A en euros"><span>€</span></div></div>
-      <div class="acct p"><i></i><div class="t">PEA<small>espèces</small></div>
-        <div class="bal"><input id="balP" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Espèces sur le PEA en euros"><span>€</span></div>
-        <p class="asub num" id="subP" hidden></p></div>
-      <div class="acct c"><i></i><div class="t">Compte-titres<small>espèces</small></div>
-        <div class="bal"><input id="balC" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Espèces sur le compte-titres en euros"><span>€</span></div>
-        <p class="asub num" id="subC" hidden></p></div>
+      <div class="acct p"><i></i><div class="t">PEA<small class="num" id="planP"></small></div>
+        <div class="bal"><b class="num" id="totP">0 €</b></div>
+        <div class="cashrow num"><label for="balP">Espèces</label><input id="balP" class="num" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span>€</span><span class="act" id="actP"></span></div></div>
+      <div class="acct c"><i></i><div class="t">Compte-titres<small class="num" id="planC"></small></div>
+        <div class="bal"><b class="num" id="totC">0 €</b></div>
+        <div class="cashrow num"><label for="balC">Espèces</label><input id="balC" class="num" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span>€</span><span class="act" id="actC"></span></div></div>
       <p class="preview num" id="preview"></p>
       <button class="sav-btn" id="addSav" type="button"></button>
       <button class="link" id="undoSav" type="button" hidden>Annuler l'ajout de ce mois</button>
