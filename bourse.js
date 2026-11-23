@@ -105,7 +105,7 @@ function renderPositions(h){
   var old=dISO(new Date(Date.now()-7*864e5));
   list.forEach(function(l){
     var x=h[l.id], b=el("button","pos"); b.type="button"; b.setAttribute("aria-label","Détail de "+l.n);
-    var t=el("span","t",l.n); t.appendChild(el("span","tag "+l.c,l.c==="pea"?"PEA":"CTO")); b.appendChild(t);
+    var t=el("span","t"); t.appendChild(el("span","nm",l.n)); t.appendChild(el("span","tag "+l.c,l.c==="pea"?"PEA":"CTO")); b.appendChild(t);
     b.appendChild(el("span","v num",eur(x.val)));
     var s=el("span","s num",fmtQ.format(x.q)+" × "+eur(x.px)+" · revient "+eur(x.pru));
     b.appendChild(s);
