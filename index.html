@@ -18,7 +18,7 @@ try{
   var dark=s.theme==="dark"||(s.theme!=="light"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);
   r.dataset.theme=dark?"dark":"light";
   if(s.accent)r.dataset.accent=s.accent;
-  if(s.design==="mono"){r.dataset.design="mono";document.getElementById("themeColor").setAttribute("content","#000000")}
+  if(s.design){r.dataset.design=s.design;if(s.design==="mono")document.getElementById("themeColor").setAttribute("content","#000000")}
 }catch(e){}
 </script>
 <link rel="stylesheet" href="styles.css">
@@ -318,13 +318,13 @@ try{
   <!-- REGLAGES -->
   <div class="view" id="vReglages" hidden>
     <div class="card">
+      <h2>Version de l'appli</h2>
+      <p class="small-p">Choisis l'apparence. Tes données restent les mêmes, tu peux changer quand tu veux.</p>
+      <div class="designs" id="designList" role="radiogroup" aria-label="Version de l'appli"></div>
+    </div>
+
+    <div class="card">
       <h2>Apparence</h2>
-      <div class="label" style="margin-bottom:8px">Style</div>
-      <div class="seg2" id="designSeg" role="group" aria-label="Style de l'appli">
-        <button type="button" data-d="verre" aria-pressed="true">Verre</button>
-        <button type="button" data-d="mono" aria-pressed="false">Minimal</button>
-      </div>
-      <p class="hint" style="margin:-4px 0 14px">Verre : couleurs et transparence. Minimal : noir et blanc, épuré, chiffres en avant.</p>
       <div class="label" style="margin-bottom:8px">Thème</div>
       <div class="seg2 t3" id="themeSeg" role="group" aria-label="Thème">
         <button type="button" data-t="auto" aria-pressed="true">Auto</button>

@@ -258,7 +258,7 @@ $("simRate").addEventListener("input",function(){state.simRate=Math.min(30,num(t
 /* ===== réglages ===== */
 function renderSettings(){
   document.querySelectorAll("#themeSeg button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.t===state.theme?"true":"false")});
-  document.querySelectorAll("#designSeg button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.d===state.design?"true":"false")});
+  renderDesigns();
   var row=$("accentRow"); row.textContent="";
   var names={green:"Vert",blue:"Bleu",orange:"Orange",rose:"Rose",slate:"Ardoise"};
   ACCENTS.forEach(function(a){
@@ -267,9 +267,25 @@ function renderSettings(){
     row.appendChild(b);
   });
 }
-document.querySelectorAll("#designSeg button").forEach(function(b){
-  b.addEventListener("click",function(){state.design=b.dataset.d;applyTheme();save();renderSettings();refresh();haptic()});
-});
+/* Version de l'appli : une carte par version de DESIGNS, avec un petit aperçu */
+function renderDesigns(){
+  var box=$("designList"); box.textContent="";
+  DESIGNS.forEach(function(d){
+    var on=d.id===state.design, b=el("button","dsg"); b.type="button";
+    b.setAttribute("role","radio"); b.setAttribute("aria-checked",on?"true":"false"); b.setAttribute("aria-label","Version "+d.n+" : "+d.d);
+    var pv=el("span","pv"); pv.style.background=d.bg;
+    var l1=el("i","l1"); l1.style.background=d.fg; var l2=el("i","l2"); l2.style.background=d.fg; var l3=el("i","l3"); l3.style.background=d.ac;
+    pv.appendChild(l1); pv.appendChild(l2); pv.appendChild(l3); b.appendChild(pv);
+    var tx=el("span","tx"); tx.appendChild(el("b","",d.n)); tx.appendChild(el("span","",d.d)); b.appendChild(tx);
+    b.appendChild(el("span","ck",on?"Active":"Choisir"));
+    b.addEventListener("click",function(){
+      if(state.design===d.id) return;
+      state.design=d.id; applyTheme(); save(); renderSettings(); refresh(); haptic();
+      showToast("Version « "+d.n+" » activée",null);
+    });
+    box.appendChild(b);
+  });
+}
 document.querySelectorAll("#themeSeg button").forEach(function(b){
   b.addEventListener("click",function(){state.theme=b.dataset.t;applyTheme();save();renderSettings()});
 });

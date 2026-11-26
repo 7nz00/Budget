@@ -10,6 +10,12 @@ var fmt=new Intl.NumberFormat("fr-FR",{maximumFractionDigits:2});
 var fmt0=new Intl.NumberFormat("fr-FR",{maximumFractionDigits:0});
 var RE_M=/^\d{4}-\d{2}$/, RE_D=/^\d{4}-\d{2}-\d{2}$/;
 var ACCTS=["livret","pea","cto"];
+/* Versions de l'appli (Réglages → Version). bg/fg/ac = couleurs de l'aperçu. */
+var DESIGNS=[
+  {id:"verre",n:"Verre",d:"Couleurs, transparence et reflets",bg:"linear-gradient(150deg,#3b3f9e,#0f6f6a 55%,#0b1020)",fg:"#eef2ff",ac:"#5eead4"},
+  {id:"mono",n:"Minimal",d:"Noir et blanc, épuré, chiffres en avant",bg:"#000",fg:"#fff",ac:"#30d158"}
+];
+function designIds(){return DESIGNS.map(function(x){return x.id})}
 // Fiscalité 2026 : prélèvements sociaux 18,6 % (PS ci-dessus) + impôt 12,8 % = flat tax 31,4 %.
 var IR=0.128, PEA_CAP=150000;
 
@@ -94,7 +100,7 @@ function sanitize(s){
     .map(function(x){return {m:x.m,v:num(x.v),c:num(x.c)}}).slice(-120);
   return {
     theme:s.theme==="dark"||s.theme==="light"?s.theme:"auto",
-    design:s.design==="mono"?"mono":"verre",
+    design:designIds().indexOf(s.design)>-1?s.design:"verre",
     accent:ACCENTS.indexOf(s.accent)>-1?s.accent:"green",
     rate:rate, mig:!!s.mig,
     simRate:s.simRate===undefined?7:Math.min(30,num(s.simRate)),

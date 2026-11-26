@@ -152,3 +152,8 @@
 :root[data-design="mono"] .file-btn{background:#1c1c1e}
 :root[data-design="mono"] .steps a,:root[data-design="mono"] .small-p a{color:#fff}
 :root[data-design="mono"] .catchips{margin:0 0 12px;padding:0 0 4px}
+
+:root[data-design="mono"] .dsg{background:#111113}
+:root[data-design="mono"] .dsg[aria-checked="true"]{border-color:#fff}
+:root[data-design="mono"] .dsg .ck{background:#1c1c1e}
+:root[data-design="mono"] .dsg[aria-checked="true"] .ck{background:#fff;color:#000}
