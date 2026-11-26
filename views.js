@@ -1,6 +1,6 @@
 "use strict";
 /* ===== état d'interface (non sauvegardé) ===== */
-var ui={vm:monthKey(),cat:null,filter:"",showAllOps:false,opKind:"versement"};
+var ui={vm:curP(),cur:curP(),cat:null,filter:"",showAllOps:false,opKind:"versement"};
 
 function rich(parent,parts){
   parts.forEach(function(p){
@@ -12,8 +12,8 @@ function rich(parent,parts){
 
 /* ===== accueil : enveloppe du mois ===== */
 function renderEnv(){
-  var cur=monthKey(), e=env(), spent=spentOf(cur), rest=e-spent, over=rest<0;
-  var dim=daysIn(cur), day=new Date().getDate(), prog=day/dim;
+  var cur=curP(), e=env(), spent=spentOf(cur), rest=e-spent, over=rest<0;
+  var dim=pLen(cur), day=pDay(cur), prog=day/dim;
   var frac=e?spent/e:(spent?1:0);
   var color=over?"var(--danger)":(e&&frac>prog+0.08?"var(--warn)":"var(--good)");
   var box=$("envRing"); box.textContent="";
@@ -33,7 +33,8 @@ function renderEnv(){
     else pace.textContent="Dans le rythme du mois";
   }
   var can=$("todayCan"); can.textContent="";
-  if(rest>0) rich(can,["Tu peux dépenser ",{b:eur(rest/daysLeft())}," par jour jusqu'à la fin du mois."]);
+  if(payLate()) rich(can,["Ton salaire était attendu le ",{b:dEnd(payDue(cur))}," Enregistre-le pour démarrer un nouveau mois."]);
+  else if(rest>0) rich(can,["Tu peux dépenser ",{b:eur(rest/daysLeft())}," par jour jusqu'à ",isPay(cur)?"ta prochaine paie.":"la fin du mois."]);
   var bars=$("envBars"); bars.textContent=""; bars.appendChild(dayBars(cur,true));
 }
 
@@ -96,27 +97,28 @@ function drag(dot,which){
 /* ===== accueil : à savoir ===== */
 function renderInsights(){
   var box=$("insights"); box.textContent="";
-  var cur=monthKey(), inc=income(), f=fixed(), sp=spendsOf(cur), spent=spentOf(cur), e=env();
-  var day=new Date().getDate(), dim=daysIn(cur), list=[];
+  var cur=curP(), inc=income(), f=fixed(), sp=spendsOf(cur), spent=spentOf(cur), e=env();
+  var s0=pStart(cur), day=pDay(cur), dim=pLen(cur), list=[];
   if(inc>0&&f>0) list.push(["%",["Tes dépenses fixes pèsent ",{b:fmt0.format(f/inc*100)+" %"}," de tes revenus."]]);
   if(sp.length){
     var by={}; sp.forEach(function(p){by[p.c]=(by[p.c]||0)+p.a});
     var top=Object.keys(by).sort(function(a,b){return by[b]-by[a]})[0];
     list.push(["★",["Ton plus gros poste ce mois-ci : ",{b:top},", ",{b:eur0(by[top])}," (",fmt0.format(by[top]/spent*100)+" % de tes dépenses du mois)."]]);
   }
-  var last=mAdd(cur,-1), lastTo=state.spends.filter(function(p){return p.d.slice(0,7)===last&&+p.d.slice(8)<=day}).reduce(function(s,p){return s+p.a},0);
+  var last=pAdd(cur,-1), ls=pStart(last), lastTo=last===cur?0:spendsOf(last).filter(function(p){return dDiff(ls,p.d)<day}).reduce(function(s,p){return s+p.a},0);
+  var than=isPay(last)?"que le mois précédent":"qu'en "+monthWord(last);
   if(lastTo>0&&spent>0){
     var df=(spent-lastTo)/lastTo*100;
-    if(Math.abs(df)<5) list.push(["≈",["À la même date, tu dépenses autant qu'en ",monthWord(last),"."]]);
-    else list.push([df<0?"↓":"↑",["À la même date, tu dépenses ",{b:fmt0.format(Math.abs(df))+" % de "+(df<0?"moins":"plus")}," qu'en "+monthWord(last)+"."]]);
+    if(Math.abs(df)<5) list.push(["≈",["Au même stade du mois, tu dépenses autant "+than+"."]]);
+    else list.push([df<0?"↓":"↑",["Au même stade du mois, tu dépenses ",{b:fmt0.format(Math.abs(df))+" % de "+(df<0?"moins":"plus")}," "+than+"."]]);
   }
   if(e>0&&day>=5&&spent>0){
     var pj=spent/day*dim;
     list.push(["→",["À ce rythme, tu finis le mois à ",{b:eur0(pj)}," sur ",eur0(e)," d'enveloppe."+(pj>e?" Il faudra ralentir.":"")]]);
   }
   var free=0, i, has={};
-  sp.forEach(function(p){has[+p.d.slice(8)]=1});
-  for(i=1;i<=day;i++) if(!has[i]) free++;
+  sp.forEach(function(p){has[dDiff(s0,p.d)]=1});
+  for(i=0;i<day;i++) if(!has[i]) free++;
   if(day>=7&&free>0) list.push(["○",["Tu as passé ",{b:free+(free>1?" jours":" jour")}," sans dépense ce mois-ci."]]);
   if(state.goals.length){
     var g=state.goals[0], est=goalEstimate(g,balanceOf(g.c));
@@ -251,16 +253,16 @@ function updateTotals(){
   refresh(); save();
 }
 function refresh(){
-  renderGauge(); renderEnv(); renderSavings(); renderMois(); renderInsights(); renderBourse();
+  renderPay(); renderGauge(); renderEnv(); renderSavings(); renderMois(); renderInsights(); renderBourse();
 }
 
 /* ===== mois ===== */
-function monthEnd(m){return m+"-"+pad(daysIn(m))}
-function defaultDate(){return ui.vm===monthKey()?todayISO():monthEnd(ui.vm)}
+function defaultDate(){var t=todayISO(),e=pEnd(ui.vm);return ui.vm===curP()||e>t?t:e}
 function renderMois(){
-  var cur=monthKey(), vm=ui.vm, isCur=vm===cur, spent=spentOf(vm), list=spendsOf(vm);
-  $("mTitle").textContent=monthLong(vm);
-  $("mNext").disabled=isCur; $("mPrev").disabled=vm<=mAdd(cur,-36);
+  var cur=curP(); if(allPeriods().indexOf(ui.vm)<0) ui.vm=cur;
+  var vm=ui.vm, isCur=vm===cur, spent=spentOf(vm), list=spendsOf(vm);
+  $("mTitle").textContent=pLabel(vm);
+  $("mNext").disabled=isCur; $("mPrev").disabled=allPeriods()[0]===vm;
   var e=env(), big=$("mRest");
   if(isCur){
     var rest=e-spent, over=rest<0, used=e?Math.min(100,spent/e*100):(spent?100:0);
@@ -271,6 +273,7 @@ function renderMois(){
     var perDay=rest>0?rest/daysLeft():0;
     $("mK1").textContent="Par jour"; $("mK2").textContent="Par semaine";
     $("mDay").textContent=eur(perDay); $("mWeek").textContent=eur(perDay*7);
+    if(payLate()){$("mDay").textContent="—";$("mWeek").textContent="—"}
   }else{
     $("mLabel").textContent="Dépensé ce mois-là";
     big.textContent=eur(spent); big.classList.remove("neg");
@@ -278,7 +281,7 @@ function renderMois(){
     var u=e?Math.min(100,spent/e*100):(spent?100:0);
     $("mBar").style.width=u+"%"; $("mBar").classList.toggle("over",e&&spent>e); $("mBar2").style.width=(100-u)+"%";
     $("mK1").textContent="Moyenne par jour"; $("mK2").textContent="Dépense moyenne";
-    $("mDay").textContent=eur(spent/daysIn(vm)); $("mWeek").textContent=eur(list.length?spent/list.length:0);
+    $("mDay").textContent=eur(spent/pLen(vm)); $("mWeek").textContent=eur(list.length?spent/list.length:0);
   }
   renderAnalysis(); $("spDays").textContent=""; $("spDays").appendChild(dayBars(vm,false));
   renderSpendList(); renderHist();
@@ -289,7 +292,7 @@ function renderAnalysis(){
   var items=Object.keys(by).map(function(c){return {n:c,v:by[c],color:vcol(c)}});
   breakdown($("spDonut"),items,{label:"dépensés",empty:"Aucune dépense ce mois-là.",size:132});
   var st=$("spStats"); st.textContent="";
-  var spent=list.reduce(function(s,p){return s+p.a},0), days=vm===monthKey()?new Date().getDate():daysIn(vm);
+  var spent=list.reduce(function(s,p){return s+p.a},0), days=vm===curP()?pDay(vm):pLen(vm);
   var big=list.reduce(function(m,p){return Math.max(m,p.a)},0);
   [["Moyenne/jour",eur0(spent/days)],["Plus grosse",eur0(big)],["Dépenses",String(list.length)]].forEach(function(x){
     var s=el("div","stat"); s.appendChild(el("div","k",x[0])); s.appendChild(el("div","v num",x[1])); st.appendChild(s);
@@ -325,22 +328,19 @@ function renderSpendList(){
   $("spTotal").textContent=eur(total);
 }
 function renderHist(){
-  var cur=monthKey(), months=[], i;
-  for(i=5;i>=0;i--){var m=mAdd(cur,-i);months.push({m:m,v:spentOf(m)})}
+  var all=allPeriods(), months=all.slice(-6).map(function(P){return {m:P,v:spentOf(P)}}), i;
   var hc=$("histChart"); hc.textContent="";
   hc.appendChild(monthBars(months,ui.vm,function(m){ui.vm=m;$("spDate").value=defaultDate();renderMois();window.scrollTo({top:0,behavior:"smooth"})}));
   var box=$("histList"); box.textContent="";
-  var first=cur; state.spends.forEach(function(p){if(p.d.slice(0,7)<first)first=p.d.slice(0,7)});
-  state.ops.forEach(function(o){if(o.m<first)first=o.m});
   var rows=[], m2;
-  for(m2=mAdd(cur,-1);m2>=first&&rows.length<24;m2=mAdd(m2,-1)){
-    var sp=spentOf(m2), sv=netSaved(m2);
+  for(i=all.length-2;i>=0&&rows.length<24;i--){
+    m2=all[i]; var sp=spentOf(m2), sv=netSaved(m2);
     if(sp>0||sv!==0) rows.push({m:m2,sp:sp,sv:sv});
   }
   var mx=rows.reduce(function(x,r){return Math.max(x,r.sp)},0);
   rows.forEach(function(r){
     var d=el("button","hist"); d.type="button";
-    var h=el("div","hh"); h.appendChild(el("span","",monthLong(r.m))); h.appendChild(el("span","num",eur(r.sp))); d.appendChild(h);
+    var h=el("div","hh"); h.appendChild(el("span","",pLabel(r.m))); h.appendChild(el("span","num",eur(r.sp))); d.appendChild(h);
     var t=el("div","track"), f=el("span","fill"); f.style.width=(mx?r.sp/mx*100:0)+"%"; t.appendChild(f); d.appendChild(t);
     var s=el("div","hs"); s.appendChild(el("span","","Voir le détail"));
     var b=el("b","num",(r.sv>=0?"Épargné ":"Retiré ")+eur(Math.abs(r.sv))); if(r.sv<0)b.style.color="var(--danger)";
@@ -377,7 +377,7 @@ function addSpend(n,a,c,d,msg){
   withUndo(msg||"Dépense ajoutée",function(){
     state.spends.push({id:uid(),d:day,n:txt(n,40),a:a,c:state.vcats.indexOf(c)>-1?c:state.vcats[state.vcats.length-1]});
     if(state.spends.length>4000)state.spends=state.spends.slice(-4000);
-    ui.vm=day.slice(0,7);
+    ui.vm=pKey(day);
   });
   $("spDate").value=defaultDate();
 }
@@ -396,11 +396,65 @@ function openSpendSheet(p){
       var a=num(amt.value); if(!a){err.textContent="Indique un montant.";return}
       if(!RE_D.test(date.value)){err.textContent="Date invalide.";return}
       closeSheet();
-      withUndo("Dépense modifiée",function(){p.a=a;p.n=txt(name.value,40);p.c=cat.value;p.d=date.value;ui.vm=p.d.slice(0,7)});
+      withUndo("Dépense modifiée",function(){p.a=a;p.n=txt(name.value,40);p.c=cat.value;p.d=date.value;ui.vm=pKey(p.d)});
     });
     del.addEventListener("click",function(){
       closeSheet();
       withUndo("Dépense supprimée",function(){state.spends=state.spends.filter(function(z){return z.id!==p.id})});
     });
+  });
+}
+
+/* ===== paie : le mois de l'appli démarre le jour où le salaire est enregistré ===== */
+function renderPay(){
+  var P=curP(), pay=isPay(P), late=payLate();
+  $("month").textContent=pLabel(P);
+  var info=$("payInfo");
+  if(!pay) info.textContent="Ton mois démarrera le jour où tu enregistres ton salaire.";
+  else if(late) info.textContent="Salaire attendu depuis le "+dEnd(payDue(P));
+  else{var n=dDiff(todayISO(),payDue(P));info.textContent="Mois démarré le "+dShort(P)+" · prochaine paie vers le "+dShort(payDue(P))+" (dans "+n+(n>1?" jours)":" jour)")}
+  $("payDue").hidden=!late;
+  if(late) $("payDueText").textContent="Paie attendue le "+dEnd(payDue(P))+" Tu l'as reçue ?";
+}
+function openPaySheet(edit){
+  openSheet(edit?"Modifier la paie":"J'ai reçu mon salaire",function(body){
+    var amt=amountInput(edit?edit.a:state.salary,"Montant du salaire reçu"); amt.classList.add("amt-in");
+    var date=el("input"); date.type="date"; date.value=edit?edit.d:todayISO(); date.max=todayISO();
+    body.appendChild(field("Montant reçu (€)",amt)); body.appendChild(field("Reçu le",date));
+    if(!edit) body.appendChild(el("p","hint","Un nouveau mois commence ce jour-là : l'enveloppe, les dépenses et l'épargne du mois repartent de zéro jusqu'à ta prochaine paie."));
+    var err=el("p","err"); err.setAttribute("role","alert"); body.appendChild(err);
+    var btns=el("div","btns"), ok=el("button","sav-btn",edit?"Enregistrer":"Démarrer le nouveau mois"); ok.type="button"; btns.appendChild(ok);
+    var del=null; if(edit){del=el("button","sav-btn danger","Supprimer");del.type="button";btns.appendChild(del)}
+    body.appendChild(btns);
+    var cancel=el("button","link","Fermer"); cancel.type="button"; cancel.addEventListener("click",closeSheet); body.appendChild(cancel);
+    ok.addEventListener("click",function(){
+      var a=num(amt.value), d=date.value;
+      if(!a){err.textContent="Indique le montant reçu.";return}
+      if(!RE_D.test(d)||d>todayISO()){err.textContent="Choisis une date passée ou aujourd'hui.";return}
+      closeSheet(); haptic();
+      withUndo(edit?"Paie modifiée":"Nouveau mois démarré le "+dShort(d),function(){
+        state.pays=state.pays.filter(function(x){return x.d!==d&&!(edit&&x.d===edit.d)});
+        state.pays.push({d:d,a:a}); state.pays.sort(function(x,y){return x.d<y.d?-1:1});
+        if(state.pays[state.pays.length-1].d===d) state.salary=a;
+        ui.vm=ui.cur=curP();
+      });
+    });
+    if(del) del.addEventListener("click",function(){
+      closeSheet();
+      withUndo("Paie supprimée",function(){state.pays=state.pays.filter(function(x){return x.d!==edit.d});ui.vm=ui.cur=curP()});
+    });
+    if(!edit&&state.pays.length){
+      var h=el("div","label field-l","Paies enregistrées"); h.style.marginTop="18px"; body.appendChild(h);
+      var box=el("div","");
+      state.pays.slice().reverse().slice(0,12).forEach(function(x){
+        var b=el("button","opr"); b.type="button"; b.setAttribute("aria-label","Modifier la paie du "+dShort(x.d));
+        b.appendChild(el("span","m",dShort(x.d)));
+        var mid=el("span",""); mid.appendChild(el("div","t","Salaire")); mid.appendChild(el("div","s num",pLabel(x.d))); b.appendChild(mid);
+        b.appendChild(el("span","v num pos",eur(x.a)));
+        b.addEventListener("click",function(){openPaySheet(x)});
+        box.appendChild(b);
+      });
+      body.appendChild(box);
+    }
   });
 }

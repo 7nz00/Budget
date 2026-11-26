@@ -82,11 +82,11 @@ function renderBourse(){
   renderAutoStatus();
 }
 function investedIn(m,c){
-  return state.pf.tx.reduce(function(s,t){return t.k==="achat"&&t.c===c&&t.d.slice(0,7)===m?s+t.q*t.p+t.f:s},0);
+  return state.pf.tx.reduce(function(s,t){return t.k==="achat"&&t.c===c&&pKey(t.d)===m?s+t.q*t.p+t.f:s},0);
 }
 function renderPfMonth(){
   var box=$("bxMonth"); box.textContent="";
-  var m=monthKey(), rows=[["pea","PEA",planPea(),"p"],["cto","Compte-titres",planCto(),"c"]];
+  var m=curP(), rows=[["pea","PEA",planPea(),"p"],["cto","Compte-titres",planCto(),"c"]];
   if(!planPea()&&!planCto()&&!investedIn(m,"pea")&&!investedIn(m,"cto")){
     box.appendChild(el("p","empty","Règle la jauge sur l'accueil pour prévoir combien investir chaque mois."));
   }

@@ -73,6 +73,7 @@ try{
   <!-- ACCUEIL -->
   <div class="view" id="vHome">
     <div class="banner" id="migrate" hidden><span id="migrateText">Des données de la V1 sont présentes sur cet appareil.</span><button class="more" id="migrateGo" type="button">Les reprendre</button></div>
+    <div class="banner" id="payDue" hidden><span id="payDueText"></span><button class="more" id="payDueGo" type="button">Enregistrer</button></div>
     <div class="banner" id="remind" hidden><span id="remindText"></span><button class="more" id="remindGo" type="button">Ajouter</button></div>
 
     <div class="card hero">
@@ -81,7 +82,8 @@ try{
         <input id="salary" class="num" type="text" inputmode="decimal" autocomplete="off" aria-label="Salaire net mensuel en euros">
         <span class="eur">€</span>
       </div>
-      <button class="pill" id="extrasBtn" type="button"></button>
+      <div class="pills"><button class="pill" id="extrasBtn" type="button"></button><button class="pill pay" id="payBtn" type="button">J'ai reçu mon salaire</button></div>
+      <p class="payinfo" id="payInfo"></p>
       <div class="split" aria-hidden="true"><i class="f" id="splitF"></i><i class="r" id="splitR"></i></div>
       <div class="stats">
         <div class="stat"><div class="k">Dépenses fixes</div><div class="v num" id="eqFixed">0 €</div></div>

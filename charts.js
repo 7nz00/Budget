@@ -55,10 +55,10 @@ function miniRing(pct,color){
 
 /* barres jour par jour d'un mois */
 function dayBars(m,small){
-  var n=daysIn(m), vals=[], i;
+  var s0=pStart(m), n=pLen(m), vals=[], i;
   for(i=0;i<n;i++)vals.push(0);
-  spendsOf(m).forEach(function(p){vals[+p.d.slice(8)-1]+=p.a});
-  var mx=Math.max.apply(null,vals)||1, today=m===monthKey()?new Date().getDate()-1:-1;
+  spendsOf(m).forEach(function(p){var k=dDiff(s0,p.d);if(k>=0&&k<n)vals[k]+=p.a});
+  var mx=Math.max.apply(null,vals)||1, today=m===curP()?dDiff(s0,todayISO()):-1;
   var w=el("div","bars"+(small?" sm":""));
   w.setAttribute("role","img"); w.setAttribute("aria-label","Dépenses jour par jour");
   vals.forEach(function(v,k){
@@ -68,7 +68,8 @@ function dayBars(m,small){
   });
   var wrap=el("div",""); wrap.appendChild(w);
   if(!small){
-    var ax=el("div","axis"); ax.appendChild(el("span","","1")); ax.appendChild(el("span","",String(Math.round(n/2)))); ax.appendChild(el("span","",String(n)));
+    var pay=isPay(m), ax=el("div","axis");
+    ax.appendChild(el("span","",pay?dShort(s0):"1")); ax.appendChild(el("span","",pay?"":String(Math.round(n/2)))); ax.appendChild(el("span","",pay?dShort(pEnd(m)):String(n)));
     wrap.appendChild(ax);
   }
   return wrap;
@@ -80,9 +81,9 @@ function monthBars(months,selected,onPick){
   var w=el("div","bars mon");
   months.forEach(function(x){
     var c=el("button","col"+(x.m===selected?" sel":"")); c.type="button";
-    c.setAttribute("aria-label",monthLong(x.m)+" : "+eur(x.v));
+    c.setAttribute("aria-label",pLabel(x.m)+" : "+eur(x.v));
     var bw=el("div","bw"), b=el("i"); b.style.height=Math.max(x.v?8:3,x.v/mx*100)+"%"; bw.appendChild(b); c.appendChild(bw);
-    c.appendChild(el("span","",cap(monthWord(x.m)).slice(0,4)));
+    c.appendChild(el("span","",pShort(x.m)));
     c.addEventListener("click",function(){onPick(x.m)});
     w.appendChild(c);
   });

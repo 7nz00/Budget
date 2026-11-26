@@ -606,3 +606,8 @@ main,.view,.card{min-width:0}
 .dsg .tx span{font-size:13px;color:var(--muted)}
 .dsg .ck{font-size:13px;font-weight:700;color:var(--muted);padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08)}
 .dsg[aria-checked="true"] .ck{background:var(--accent);color:var(--on-accent)}
+
+/* paie : boutons sous le salaire et date du mois en cours */
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+.pills .pill{margin:0}
+.payinfo{margin:4px 0 14px;font-size:13px;color:var(--muted);line-height:1.35}

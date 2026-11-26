@@ -47,14 +47,54 @@ function dayLabel(iso){
   if(iso===t)return "Aujourd'hui"; if(iso===y)return "Hier";
   return cap(pISO(iso).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"}));
 }
-function daysLeft(){var d=new Date();return daysIn(monthKey())-d.getDate()+1}
+function dAdd(iso,n){var d=pISO(iso);d.setDate(d.getDate()+n);return dISO(d)}
+function dDiff(a,b){return Math.round((pISO(b)-pISO(a))/864e5)}
+function dShort(iso){return pISO(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}
+/* date en fin de phrase : « 20 nov. » garde son point, « 20 juin » en reçoit un */
+function dEnd(iso){var s=dShort(iso);return /\.$/.test(s)?s:s+"."}
+/* même jour le mois suivant (31 janv. -> 28 févr.) */
+function nextMonthSameDay(iso){var p=iso.split("-"),y=+p[0],m=+p[1],d=+p[2];return dISO(new Date(y,m,Math.min(d,new Date(y,m+1,0).getDate())))}
+
+/* ===== périodes ("mois" de l'appli) =====
+   Tant qu'aucune paie n'est enregistrée : mois du calendrier, clé "AAAA-MM".
+   Dès la 1re paie : un mois va du jour de la paie à la veille de la suivante, clé "AAAA-MM-JJ" (jour de la paie).
+   Les jours avant la 1re paie restent rangés dans leur mois du calendrier. */
+function isPay(P){return P.length===10}
+function pKey(iso){var ds=state.pays,i,k="";for(i=0;i<ds.length&&ds[i].d<=iso;i++)k=ds[i].d;return k||iso.slice(0,7)}
+function curP(){return pKey(todayISO())}
+function pStart(P){return isPay(P)?P:P+"-01"}
+function nextPayAfter(iso){var i;for(i=0;i<state.pays.length;i++)if(state.pays[i].d>iso)return state.pays[i].d;return ""}
+/* date attendue de la prochaine paie (période en cours) */
+function payDue(P){return nextMonthSameDay(P)}
+/* paie en retard : la date attendue est passée et le nouveau salaire n'est pas encore enregistré */
+function payLate(){var P=curP();return isPay(P)&&!nextPayAfter(P)&&todayISO()>=payDue(P)}
+/* dernier jour inclus ; période en cours : fin estimée, prolongée tant que la paie n'arrive pas */
+function pEnd(P){
+  var n=nextPayAfter(pStart(P));
+  if(isPay(P)){if(n)return dAdd(n,-1);var e=dAdd(payDue(P),-1),t=todayISO();return t>e?t:e}
+  var me=P+"-"+pad(daysIn(P)); return n&&n<=me?dAdd(n,-1):me;
+}
+function pLen(P){return Math.max(1,dDiff(pStart(P),pEnd(P))+1)}
+function pDay(P){return Math.min(pLen(P),Math.max(1,dDiff(pStart(P),todayISO())+1))}
+function pLabel(P){return isPay(P)?dShort(P)+" → "+dShort(pEnd(P)):monthLong(P)}
+function pShort(P){return isPay(P)?+P.slice(8)+"/"+P.slice(5,7):cap(monthWord(P)).slice(0,4)}
+/* toutes les périodes, de la plus ancienne (données ou 12 mois en arrière) à celle en cours */
+function allPeriods(){
+  var cur=curP(), first=mAdd(monthKey(),-12)+"-01", out=[], k, n=0;
+  state.spends.forEach(function(p){if(p.d<first)first=p.d});
+  state.ops.forEach(function(o){if(o.m+"-01"<first)first=o.m+"-01"});
+  for(k=pKey(first);n<600;n++){out.push(k);if(k>=cur)break;k=pKey(dAdd(pEnd(k),1))}
+  return out.slice(-72);
+}
+function pAdd(P,n){var a=allPeriods(),i=a.indexOf(P);if(i<0)return curP();return a[Math.min(a.length-1,Math.max(0,i+n))]}
+function daysLeft(){var P=curP();return Math.max(1,dDiff(todayISO(),pEnd(P))+1)}
 
 /* ===== données ===== */
 function makeDefault(){
   return {theme:"auto",accent:"green",rate:1.5,mig:false,cats:DEF_FCATS.slice(),vcats:DEF_VCATS.slice(),
     livret:0,pea:0,cto:0,ops:[],goals:[],extras:[],spends:[],
     quick:[{n:"Repas du midi",a:8,c:"Restau"},{n:"Café",a:3,c:"Restau"},{n:"Plaisir",a:15,c:"Loisirs"}],
-    salary:0,rows:[],h1:0,h2:0,h3:0,pf:{lines:[],tx:[],snaps:[],peaOpen:""}};
+    salary:0,pays:[],rows:[],h1:0,h2:0,h3:0,pf:{lines:[],tx:[],snaps:[],peaOpen:""}};
 }
 function cleanList(arr,def,max,len){
   var out=[];
@@ -71,6 +111,11 @@ function sanitize(s){
     if(h.k==="retrait"||h.k==="versement") return {id:txt(h.id,20)||uid(),k:h.k,m:h.m,c:ACCTS.indexOf(h.c)>-1?h.c:"livret",a:num(h.a)};
     return {id:txt(h.id,20)||uid(),k:"depot",m:h.m,l:num(h.l),p:num(h.p),t:num(h.t)};
   }).filter(Boolean).slice(-400);
+  // pk = mois de paie auquel le mouvement est rattaché (facultatif)
+  ops.forEach(function(o){var h=oldOps.filter(function(x){return x&&x.id===o.id})[0];if(h&&RE_D.test(h.pk))o.pk=h.pk});
+  var pays=[], seen={};
+  (Array.isArray(s.pays)?s.pays:[]).forEach(function(x){if(x&&RE_D.test(x.d)&&!seen[x.d]){seen[x.d]=1;pays.push({d:x.d,a:num(x.a)})}});
+  pays.sort(function(a,b){return a.d<b.d?-1:1}); pays=pays.slice(-240);
   var goals=(Array.isArray(s.goals)?s.goals:[]).map(function(g){
     if(!g||!(num(g.t)>0)) return null;
     return {id:txt(g.id,20)||uid(),n:txt(g.n,40),c:ACCTS.indexOf(g.c)>-1?g.c:"total",t:num(g.t),by:RE_M.test(g.by)?g.by:""};
@@ -110,7 +155,7 @@ function sanitize(s){
     cto:num(s.cto),
     pf:{lines:lines,tx:tx,snaps:snaps,peaOpen:RE_M.test(pf0.peaOpen)?pf0.peaOpen:"",auto:typeof pf0.auto==="number"&&isFinite(pf0.auto)?pf0.auto:0},
     ops:ops, goals:goals, extras:extras, spends:spends, quick:quick,
-    salary:num(s.salary),
+    salary:num(s.salary), pays:pays,
     rows:s.rows.slice(0,200).map(function(r){return {id:txt(r&&r.id,20)||uid(),n:txt(r&&r.n,60),a:num(r&&r.a),c:cats.indexOf(r&&r.c)>-1?r.c:cats[cats.length-1]}}),
     // h3 = fin de la part compte-titres ; les anciennes données n'en ont pas : part CTO à 0.
     h1:num(s.h1),h2:num(s.h2),h3:s.h3===undefined?num(s.h2):num(s.h3)
@@ -150,17 +195,19 @@ function clamp(){
 }
 function planPea(){return state.h2-state.h1}
 function planCto(){return state.h3-state.h2}
-function spendsOf(m){return state.spends.filter(function(p){return p.d.slice(0,7)===m})}
+function spendsOf(P){return state.spends.filter(function(p){return pKey(p.d)===P})}
 function spentOf(m){return spendsOf(m).reduce(function(s,p){return s+p.a},0)}
-function netSaved(m){
+/* période d'un mouvement d'épargne : son mois de paie s'il en a un, sinon son mois */
+function opP(o){return o.pk||pKey(o.m+"-01")}
+function netSaved(P){
   return state.ops.reduce(function(s,o){
-    if(o.m!==m) return s;
+    if(opP(o)!==P) return s;
     return s+(o.k==="depot"?o.l+o.p+o.t:o.k==="versement"?o.a:-o.a);
   },0);
 }
 function vcol(c){var i=state.vcats.indexOf(c);return PALETTE[(i<0?PALETTE.length-1:i)%PALETTE.length]}
 function fcol(c){var i=state.cats.indexOf(c);return PALETTE[(i<0?PALETTE.length-1:i)%PALETTE.length]}
-function currentDepot(){return state.ops.filter(function(o){return o.k==="depot"&&o.m===monthKey()})[0]}
+function currentDepot(){var P=curP();return state.ops.filter(function(o){return o.k==="depot"&&opP(o)===P})[0]}
 /* Mouvement d'épargne -> variation [Livret A, espèces PEA, espèces compte-titres] */
 function opDelta(o){
   if(o.k==="depot") return [o.l,o.p,o.t];

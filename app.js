@@ -109,7 +109,7 @@ function renderSavings(){
   btn.textContent=same?"Ce mois est déjà ajouté":(e?"Mettre à jour ce mois":"Ajouter ce mois au suivi · +"+eur0(l+p+c));
   $("undoSav").hidden=!e;
   $("remind").hidden=!!e;
-  $("remindText").textContent="Pense à ajouter "+monthLong(monthKey()).toLowerCase()+" à ton épargne.";
+  var P=curP(); $("remindText").textContent="Pense à ajouter "+(isPay(P)?"ton mois du "+dShort(P):monthLong(P).toLowerCase())+" à ton épargne.";
   $("migrate").hidden=!(state.mig&&v1Raw);
   renderGoals(); renderChart(); renderProj();
 }
@@ -145,7 +145,8 @@ $("balP").addEventListener("input",function(){state.pea=num(this.value);renderSa
 $("balC").addEventListener("input",function(){state.cto=num(this.value);renderSavings();renderBourse();save()});
 $("addSav").addEventListener("click",function(){
   var e=currentDepot(); if(e){applyOp(e,-1);state.ops=state.ops.filter(function(o){return o!==e})}
-  var o={id:uid(),k:"depot",m:monthKey(),l:state.h1,p:planPea(),t:planCto()};
+  var P=curP(), o={id:uid(),k:"depot",m:pStart(P).slice(0,7),l:state.h1,p:planPea(),t:planCto()};
+  if(isPay(P)) o.pk=P;
   state.ops.push(o); applyOp(o,1); setBalances(); renderOps(); refresh(); save(); haptic();
 });
 $("undoSav").addEventListener("click",function(){
@@ -168,6 +169,7 @@ $("opForm").addEventListener("submit",function(e){
   if(!RE_M.test(m)){err.textContent="Mois invalide.";return}
   err.textContent="";
   var o={id:uid(),k:ui.opKind,m:m,c:$("opAcct").value,a:a};
+  if(m===monthKey()&&isPay(curP())) o.pk=curP();
   if(ui.opKind==="retrait"){var bal=cashOf(o.c);if(a>bal){err.textContent="Retrait supérieur aux espèces disponibles ("+eur(bal)+").";return}}
   state.ops.push(o); applyOp(o,1); $("opAmt").value=""; setBalances(); renderOps(); refresh(); save();
   haptic(); showToast(ui.opKind==="retrait"?"Retrait enregistré":"Versement enregistré",null);
@@ -183,8 +185,9 @@ function renderOps(){
   var shown=ui.showAllOps?list:list.slice(0,6);
   shown.forEach(function(x){
     var o=x.o, inf=opInfo(o);
-    var b=el("button","opr"); b.type="button"; b.setAttribute("aria-label","Modifier : "+inf.t+" "+monthShort(o.m));
-    b.appendChild(el("span","m",monthShort(o.m)));
+    var when=o.pk?dShort(o.pk):monthShort(o.m);
+    var b=el("button","opr"); b.type="button"; b.setAttribute("aria-label","Modifier : "+inf.t+" "+when);
+    b.appendChild(el("span","m",when));
     var mid=el("span",""); mid.appendChild(el("div","t",inf.t)); mid.appendChild(el("div","s num",inf.s)); b.appendChild(mid);
     b.appendChild(el("span","v num "+(inf.v>=0?"pos":"neg"),sg(inf.v)));
     b.addEventListener("click",function(){openOpSheet(o)});
@@ -213,10 +216,11 @@ function openOpSheet(o){
     var cancel=el("button","link","Fermer"); cancel.type="button"; cancel.addEventListener("click",closeSheet); body.appendChild(cancel);
     save1.addEventListener("click",function(){
       if(!RE_M.test(month.value)){err.textContent="Mois invalide.";return}
-      if(o.k==="depot"&&state.ops.some(function(z){return z!==o&&z.k==="depot"&&z.m===month.value})){err.textContent="Un versement du mois existe déjà pour ce mois.";return}
       var n;
       if(o.k==="depot")n={id:o.id,k:"depot",m:month.value,l:num(l.value),p:num(p.value),t:num(t.value)};
       else{n={id:o.id,k:o.k,m:month.value,c:c.value,a:num(a.value)};if(!n.a){err.textContent="Indique un montant.";return}}
+      if(o.pk&&month.value===o.m) n.pk=o.pk;
+      if(o.k==="depot"&&state.ops.some(function(z){return z!==o&&z.k==="depot"&&opP(z)===opP(n)})){err.textContent="Un versement du mois existe déjà pour ce mois.";return}
       applyOp(o,-1); applyOp(n,1);
       state.ops[state.ops.indexOf(o)]=n;
       closeSheet(); setBalances(); renderOps(); refresh(); save();
@@ -508,7 +512,7 @@ function runCSV(text){
       withUndo(fresh.length+" dépenses importées",function(){
         fresh.forEach(function(x){state.spends.push({id:uid(),d:x.d,n:x.n,a:x.a,c:x.c})});
         if(state.spends.length>4000)state.spends=state.spends.slice(-4000);
-        ui.vm=fresh[fresh.length-1].d.slice(0,7);
+        ui.vm=pKey(fresh[fresh.length-1].d);
       });
       $("csvBox").value=""; haptic();
     });
@@ -561,8 +565,10 @@ $("hmGo").addEventListener("click",function(){show("mois");setTimeout(function()
 $("extrasBtn").addEventListener("click",openExtrasSheet);
 
 /* ===== mois : formulaire et navigation ===== */
-$("mPrev").addEventListener("click",function(){ui.vm=mAdd(ui.vm,-1);$("spDate").value=defaultDate();renderMois()});
-$("mNext").addEventListener("click",function(){if(ui.vm<monthKey()){ui.vm=mAdd(ui.vm,1);$("spDate").value=defaultDate();renderMois()}});
+$("mPrev").addEventListener("click",function(){ui.vm=pAdd(ui.vm,-1);$("spDate").value=defaultDate();renderMois()});
+$("mNext").addEventListener("click",function(){if(ui.vm!==curP()){ui.vm=pAdd(ui.vm,1);$("spDate").value=defaultDate();renderMois()}});
+$("payBtn").addEventListener("click",function(){openPaySheet(null)});
+$("payDueGo").addEventListener("click",function(){openPaySheet(null)});
 $("spFilter").addEventListener("change",function(){ui.filter=this.value;renderSpendList()});
 $("spForm").addEventListener("submit",function(e){
   e.preventDefault();
@@ -589,10 +595,11 @@ function renderAll(){
 
 /* ===== démarrage ===== */
 drag($("dot1"),1); drag($("dot2"),2); drag($("dot3"),3);
-function setMonth(){$("month").textContent=monthLong(monthKey())}
-setMonth();
 document.addEventListener("visibilitychange",function(){
-  if(!document.hidden){setMonth();$("spDate").max=todayISO();refresh()}
+  if(document.hidden) return;
+  // un nouveau mois a pu commencer pendant que l'appli était en arrière-plan
+  var c=curP(); if(ui.vm===ui.cur) ui.vm=c; ui.cur=c;
+  $("spDate").max=todayISO(); refresh();
 });
 $("simInit").value=fmt.format(r2(peaTotal()));
 $("simMonth").value=fmt.format(Math.max(0,planPea())); $("simYears").value="10"; $("simRate").value=fmt.format(state.simRate);
