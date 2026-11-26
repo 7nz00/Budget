@@ -1,0 +1,154 @@
+/* ===================== STYLE « MINIMAL » =====================
+   Activé par Réglages → Style → Minimal (attribut data-design="mono" sur <html>).
+   Noir pur, texte blanc, sections à plat séparées par des filets,
+   chiffres en gras, vert / rouge réservés aux hausses et baisses. */
+
+:root[data-design="mono"]{
+  --bg:#000;--surface:#000;--ink:#fff;--muted:#8e8e93;--line:#1f1f22;
+  --accent:#fff;--accent-soft:#1c1c1e;--on-accent:#000;--track:#1c1c1e;--chip:#1c1c1e;--slate:#636366;
+  --livret:#f2f2f7;--pea:#a1a1a6;--cto:#5e5ce6;--depenses:#ff9f0a;--danger:#ff453a;
+  --good:#30d158;--warn:#ff9f0a;--out:#ff453a;--up:#30d158;--down:#ff453a;--incomeglow:transparent;
+  --num:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+  --shadow:none;
+}
+/* les couleurs d'accent choisies ne s'appliquent pas : tout reste noir et blanc */
+:root[data-design="mono"][data-accent]{--accent:#fff;--accent-soft:#1c1c1e;--on-accent:#000}
+
+/* fond, typographie, plus aucun reflet ni lueur */
+:root[data-design="mono"],:root[data-design="mono"] body{background:#000}
+:root[data-design="mono"] body{background-image:none;background-attachment:scroll}
+:root[data-design="mono"] *{text-shadow:none!important}
+:root[data-design="mono"] #splash{background:#000}
+
+/* en-tête */
+:root[data-design="mono"] header h1{font-size:30px;font-weight:800;letter-spacing:-.03em}
+:root[data-design="mono"] .month{color:var(--muted)}
+:root[data-design="mono"] .hbtn{background:#1c1c1e;border:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+
+/* sections à plat au lieu des cartes */
+:root[data-design="mono"] .card,
+:root[data-design="mono"] .hero{
+  background:transparent;border:0;border-radius:0;box-shadow:none;
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+  padding:22px 0;border-top:1px solid var(--line);
+}
+:root[data-design="mono"] .view > .card:first-child,
+:root[data-design="mono"] .view > .banner + .card,
+:root[data-design="mono"] .view > [hidden] + .card{border-top:0;padding-top:6px}
+:root[data-design="mono"] .card h2{font-size:21px;font-weight:800;letter-spacing:-.02em;color:#fff}
+:root[data-design="mono"] .label,:root[data-design="mono"] .stat .k{color:var(--muted);font-weight:600}
+
+/* gros chiffres : gras et nets */
+:root[data-design="mono"] .salary-wrap input{color:#fff;font-size:56px;font-weight:700;letter-spacing:-.04em}
+:root[data-design="mono"] .salary-wrap .eur{color:var(--muted);font-weight:600}
+:root[data-design="mono"] .big-total{font-size:44px;font-weight:700}
+:root[data-design="mono"] .patri b{font-size:42px;font-weight:700;color:#fff}
+:root[data-design="mono"] #hSav,:root[data-design="mono"] #patri{color:#fff}
+:root[data-design="mono"] .ringc b{font-size:38px;font-weight:700;color:#fff}
+:root[data-design="mono"] .ringc b.neg{color:var(--danger)}
+:root[data-design="mono"] .stat .v,:root[data-design="mono"] .line .v,:root[data-design="mono"] .acct .bal b,
+:root[data-design="mono"] .acct input,:root[data-design="mono"] .dc b,:root[data-design="mono"] .amt-in{font-weight:700;letter-spacing:-.02em}
+:root[data-design="mono"] .stat.good .v,
+:root[data-design="mono"] #reste,:root[data-design="mono"] #reste2,:root[data-design="mono"] #expRest,
+:root[data-design="mono"] #mRest:not(.neg),:root[data-design="mono"] #mDay,:root[data-design="mono"] #mWeek{color:#fff;font-weight:700}
+:root[data-design="mono"] #reste2{font-size:30px}
+:root[data-design="mono"] #eqFixed,:root[data-design="mono"] #expTotal{color:#fff}
+:root[data-design="mono"] #hL,:root[data-design="mono"] #hP,:root[data-design="mono"] #hC,
+:root[data-design="mono"] .line .v,:root[data-design="mono"] #balL,:root[data-design="mono"] #balP,:root[data-design="mono"] #balC,
+:root[data-design="mono"] #totP,:root[data-design="mono"] #totC,:root[data-design="mono"] .acct .bal b{color:#fff}
+:root[data-design="mono"] #spTotal,:root[data-design="mono"] #vd{color:#fff}
+
+/* tuiles de chiffres : gris très sombre, sans bordure */
+:root[data-design="mono"] .stat,:root[data-design="mono"] .hero .stat,
+:root[data-design="mono"] .stat.good,:root[data-design="mono"] .hero .stat.good,
+:root[data-design="mono"] .line,:root[data-design="mono"] .acct,:root[data-design="mono"] .goal,
+:root[data-design="mono"] .prev-list,:root[data-design="mono"] .taxb{
+  background:#111113;border:0;box-shadow:none;border-radius:16px;
+}
+:root[data-design="mono"] .stat.good .k{color:var(--muted)}
+
+/* listes : lignes séparées par des filets, sans bulles */
+:root[data-design="mono"] .pos,:root[data-design="mono"] .hist,:root[data-design="mono"] .res{
+  background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;margin:0;padding:14px 0;
+}
+:root[data-design="mono"] .pos:last-child,:root[data-design="mono"] .hist:last-child{border-bottom:0}
+:root[data-design="mono"] .res[aria-pressed="true"]{background:#111113;border-radius:12px;padding:12px 10px;border-bottom-color:transparent}
+:root[data-design="mono"] .pos .t{font-size:17px}
+:root[data-design="mono"] .pos .v{font-weight:700}
+:root[data-design="mono"] .hist .fill{background:#fff}
+:root[data-design="mono"] .hist .hs b{color:#fff}
+
+/* gains et pertes */
+:root[data-design="mono"] .up,:root[data-design="mono"] .opr .v.pos{color:var(--up)}
+:root[data-design="mono"] .down,:root[data-design="mono"] .opr .v.neg{color:var(--down)}
+:root[data-design="mono"] .tag.pea{background:#1c1c1e;color:#d1d1d6}
+:root[data-design="mono"] .tag.cto{background:#1c1c1e;color:#d1d1d6}
+
+/* boutons : pilule blanche (principal), gris foncé (secondaire) */
+:root[data-design="mono"] .sav-btn{background:#fff;color:#000;box-shadow:none;border-radius:999px;font-weight:700}
+:root[data-design="mono"] .sav-btn:disabled{background:#1c1c1e;color:var(--muted)}
+:root[data-design="mono"] .sav-btn.ghost{background:#1c1c1e;color:#fff}
+:root[data-design="mono"] .sav-btn.danger{background:#1c1c1e;color:var(--danger)}
+:root[data-design="mono"] .add,:root[data-design="mono"] .more{background:#1c1c1e;color:#fff}
+:root[data-design="mono"] .pill{background:#1c1c1e;color:#fff;box-shadow:none}
+:root[data-design="mono"] .chip,:root[data-design="mono"] .cc{background:#1c1c1e;color:#fff}
+:root[data-design="mono"] .cc[aria-pressed="true"],:root[data-design="mono"] .sim-presets .chip[aria-pressed="true"]{background:#fff;color:#000}
+:root[data-design="mono"] .link{color:var(--muted)}
+:root[data-design="mono"] .seg2{background:#1c1c1e}
+:root[data-design="mono"] .seg2 button[aria-pressed="true"]{background:#3a3a3c;color:#fff}
+:root[data-design="mono"] .mnav button{background:#1c1c1e}
+
+/* champs */
+:root[data-design="mono"] input,:root[data-design="mono"] select,:root[data-design="mono"] textarea{background:#1c1c1e;border:1px solid transparent;color:#fff}
+:root[data-design="mono"] input:focus-visible,:root[data-design="mono"] select:focus-visible,:root[data-design="mono"] textarea:focus-visible{border-color:#fff}
+:root[data-design="mono"] .salary-wrap input,:root[data-design="mono"] .acct .bal input,:root[data-design="mono"] .cashrow input{background:transparent}
+:root[data-design="mono"] .acct input{border-bottom-color:#3a3a3c}
+
+/* barres, anneau, jauge */
+:root[data-design="mono"] .split{background:#1c1c1e;height:8px}
+:root[data-design="mono"] .split .f{background:#48484a}
+:root[data-design="mono"] .split .r{background:#fff;box-shadow:none}
+:root[data-design="mono"] #mBar{background:#48484a}
+:root[data-design="mono"] #mBar.over{background:var(--danger)}
+:root[data-design="mono"] #mBar2{background:#fff}
+:root[data-design="mono"] .ringw .arc{filter:none}
+:root[data-design="mono"] .bars .col i{background:#fff;box-shadow:none}
+:root[data-design="mono"] .bars .col i.z{background:#1c1c1e}
+:root[data-design="mono"] .bars.mon .col i{background:#fff}
+:root[data-design="mono"] .bar{background:#1c1c1e;height:14px;top:16px;border-radius:7px}
+:root[data-design="mono"] .dot{width:34px;height:34px;margin-left:-17px;top:6px;background:#fff;box-shadow:0 0 0 2px #000,0 2px 8px rgba(0,0,0,.6)}
+:root[data-design="mono"] .pace{background:#1c1c1e;color:#fff}
+:root[data-design="mono"] .pace.warn{background:#1c1c1e;color:var(--warn)}
+:root[data-design="mono"] .pace.bad{background:#1c1c1e;color:var(--danger)}
+:root[data-design="mono"] .fill{background:#fff}
+:root[data-design="mono"] .mrow .fill.p{background:var(--pea)}
+:root[data-design="mono"] .mrow .fill.c{background:var(--cto)}
+:root[data-design="mono"] .alert{background:#1c1c1e}
+
+/* bandeaux */
+:root[data-design="mono"] .banner{background:#111113;border:0;color:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}
+:root[data-design="mono"] .banner .more{background:#fff;color:#000}
+:root[data-design="mono"] .in i{background:#1c1c1e;color:#fff}
+:root[data-design="mono"] .goal .gchip{background:#1c1c1e;color:var(--muted)}
+:root[data-design="mono"] .goal .gchip.done,:root[data-design="mono"] .goal .gchip.ok{background:#1c1c1e;color:var(--up)}
+:root[data-design="mono"] .goal .gchip.late{background:#1c1c1e;color:var(--warn)}
+
+/* barre d'onglets */
+:root[data-design="mono"] .tabs{background:rgba(0,0,0,.92);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+:root[data-design="mono"] .tabs button{color:#636366}
+:root[data-design="mono"] .tabs button[aria-current="page"]{color:#fff}
+:root[data-design="mono"] .tabs button[aria-current="page"]::before{display:none}
+
+/* fenêtres du bas et toast */
+:root[data-design="mono"] #sheet{background:rgba(0,0,0,.7);-webkit-backdrop-filter:none;backdrop-filter:none}
+:root[data-design="mono"] .panel{background:#111113;border:0;border-radius:24px 24px 0 0}
+:root[data-design="mono"] .panel input,:root[data-design="mono"] .panel select{background:#1c1c1e}
+:root[data-design="mono"] .grab{background:#3a3a3c}
+:root[data-design="mono"] #toast{background:#1c1c1e;color:#fff;border:0}
+:root[data-design="mono"] #toast button{color:#fff;text-decoration:underline}
+
+/* réglages */
+:root[data-design="mono"] .sw{opacity:.35;pointer-events:none}
+:root[data-design="mono"] .file-btn{background:#1c1c1e}
+:root[data-design="mono"] .steps a,:root[data-design="mono"] .small-p a{color:#fff}
+:root[data-design="mono"] .catchips{margin:0 0 12px;padding:0 0 4px}

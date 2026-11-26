@@ -94,6 +94,7 @@ function sanitize(s){
     .map(function(x){return {m:x.m,v:num(x.v),c:num(x.c)}}).slice(-120);
   return {
     theme:s.theme==="dark"||s.theme==="light"?s.theme:"auto",
+    design:s.design==="mono"?"mono":"verre",
     accent:ACCENTS.indexOf(s.accent)>-1?s.accent:"green",
     rate:rate, mig:!!s.mig,
     simRate:s.simRate===undefined?7:Math.min(30,num(s.simRate)),
@@ -210,8 +211,8 @@ var mq=window.matchMedia?matchMedia("(prefers-color-scheme: dark)"):null;
 function effTheme(){return state.theme==="auto"?(mq&&mq.matches?"dark":"light"):state.theme}
 function applyTheme(){
   var r=document.documentElement, t=effTheme();
-  r.dataset.theme=t; r.dataset.accent=state.accent;
-  $("themeColor").setAttribute("content","#0b1020");
+  r.dataset.theme=t; r.dataset.accent=state.accent; r.dataset.design=state.design;
+  $("themeColor").setAttribute("content",state.design==="mono"?"#000000":"#0b1020");
 }
 if(mq&&mq.addEventListener) mq.addEventListener("change",function(){if(state.theme==="auto")applyTheme()});
 

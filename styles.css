@@ -581,3 +581,13 @@ main,.view,.card{min-width:0}
 .pos .g{grid-area:g}
 .pos .err2,.pos .s.old{grid-area:e;grid-column:1/-1!important;margin-top:4px}
 .row select{width:100%;max-width:100%;justify-self:stretch}
+.gainline{margin:0 0 10px;font-size:15px;font-weight:700}
+.gainline:empty{display:none}
+.herochart{margin:0 0 12px}
+.herochart:empty{display:none}
+.chart.hc{height:90px}
+.herochart path:nth-child(2){display:none}
+.herochart.up path:nth-child(1){fill:var(--up);opacity:.14}
+.herochart.up path:nth-child(3){stroke:var(--up)}
+.herochart.down path:nth-child(1){fill:var(--down);opacity:.14}
+.herochart.down path:nth-child(3){stroke:var(--down)}

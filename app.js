@@ -258,6 +258,7 @@ $("simRate").addEventListener("input",function(){state.simRate=Math.min(30,num(t
 /* ===== réglages ===== */
 function renderSettings(){
   document.querySelectorAll("#themeSeg button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.t===state.theme?"true":"false")});
+  document.querySelectorAll("#designSeg button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.d===state.design?"true":"false")});
   var row=$("accentRow"); row.textContent="";
   var names={green:"Vert",blue:"Bleu",orange:"Orange",rose:"Rose",slate:"Ardoise"};
   ACCENTS.forEach(function(a){
@@ -266,6 +267,9 @@ function renderSettings(){
     row.appendChild(b);
   });
 }
+document.querySelectorAll("#designSeg button").forEach(function(b){
+  b.addEventListener("click",function(){state.design=b.dataset.d;applyTheme();save();renderSettings();refresh();haptic()});
+});
 document.querySelectorAll("#themeSeg button").forEach(function(b){
   b.addEventListener("click",function(){state.theme=b.dataset.t;applyTheme();save();renderSettings()});
 });

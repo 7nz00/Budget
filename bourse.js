@@ -67,6 +67,10 @@ function renderBourse(){
   var cost=0; state.pf.lines.forEach(function(l){cost+=h[l.id].cost});
   var val=tp+tc, gain=val-cost;
   $("bxTot").textContent=eur(val+cash);
+  var gl=$("bxGain"); gl.textContent=""; gl.className="gainline num "+(gain>=0?"up":"down");
+  if(cost) gl.textContent=sg(gain)+" ("+pct(gain,cost)+") de plus-value latente";
+  var hs=$("bxSpark"); hs.textContent=""; hs.className="herochart "+(gain>=0?"up":"down");
+  if(state.pf.snaps.length>=2) hs.innerHTML=pfChart(state.pf.snaps,true);
   var sub=$("bxSub"); sub.textContent="";
   sub.appendChild(document.createTextNode(eur(val)+" en actions · "+eur(cash)+" d'espèces"));
   var st=$("bxStats"); st.textContent="";

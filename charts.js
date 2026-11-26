@@ -108,14 +108,14 @@ function areaChart(pts,small){
 }
 
 /* portefeuille : valeur (trait plein) et montant investi (pointillés). pts: [{m,v,c}] */
-function pfChart(pts){
-  var W=300, H=140, all=[];
+function pfChart(pts,small){
+  var W=300, H=small?90:140, all=[];
   pts.forEach(function(q){all.push(q.v,q.c)});
   var max=Math.max.apply(null,all)||1, mn=Math.min.apply(null,all);
   var lo=Math.max(0,mn-(max-mn)*0.6-max*0.02); if(max-lo<1)lo=0;
   var X=function(i){return i/(pts.length-1)*W}, Y=function(v){return H-3-Math.max(0,v-lo)/(max-lo)*(H-9)};
   var line=function(k){return pts.map(function(q,i){return (i?"L":"M")+X(i).toFixed(1)+" "+Y(q[k]).toFixed(1)}).join(" ")};
-  return '<svg class="chart" viewBox="0 0 '+W+" "+H+'" preserveAspectRatio="none" role="img" aria-label="Valeur du portefeuille et montant investi">'
+  return '<svg class="chart'+(small?" hc":"")+'" viewBox="0 0 '+W+" "+H+'" preserveAspectRatio="none" role="img" aria-label="Valeur du portefeuille et montant investi">'
     +'<path d="'+line("v")+" L"+W+" "+H+" L0 "+H+' Z" fill="var(--cto)" opacity=".18"/>'
     +'<path d="'+line("c")+'" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"/>'
     +'<path d="'+line("v")+'" fill="none" stroke="var(--cto)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'
